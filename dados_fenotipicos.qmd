@@ -1,0 +1,1648 @@
+---
+title: "Exploração e preparação dos dados fenotípicos para análise"
+pagetitle: "Semana de IA"
+subtitle: "Semana de IA | Genomes to Fields 2023"
+author: "Vitor e Jean"
+lang: pt-BR
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-title: "Roteiro"
+    toc-location: left
+    number-sections: true
+    number-depth: 4
+    theme:
+      light: journal
+      dark: darkly
+    embed-resources: true
+    anchor-sections: true
+    smooth-scroll: true
+    code-fold: true
+    code-summary: "código R"
+    code-overflow: wrap
+    code-block-border-left: "#781c1e"
+    code-copy: hover
+    code-tools:
+      source: true
+      toggle: false
+      caption: "Código fonte"
+    fig-format: svg
+    fig-responsive: true
+    fig-cap-location: bottom
+    tbl-cap-location: top
+    page-layout: article
+    css: styles.css
+    title-block-banner: true
+    title-block-banner-color: "white"
+    highlight-style: github
+execute:
+  message: false
+editor_options:
+  chunk_output_type: console
+---
+
+```{=html}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:wght@500;600;700&display=swap">
+<style>
+
+:root {
+  --font-display: "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --font-body:    "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+
+  --accent:        #8a2a2e;
+  --accent-strong: #6d1f23;
+  --accent-bright: #d9777a;
+  --accent-soft:   rgba(138, 42, 46, .08);
+  --accent-ring:   rgba(138, 42, 46, .28);
+  --on-accent:     #ffffff;
+  --slate:         #4f6f8f;
+  --link:          #8a2a2e;
+
+  --ink-soft:      #6b6560;
+  --line:          rgba(60, 40, 35, .10);
+  --line-strong:   rgba(60, 40, 35, .18);
+  --surface:       #ffffff;
+  --surface-2:     #faf8f6;
+  --thead-bg:      #f5f1ee;
+  --row-hover:     rgba(138, 42, 46, .05);
+  --stripe:        rgba(60, 40, 35, .022);
+
+  --code-bg:          #faf8f6;
+  --code-inline-bg:   rgba(79, 111, 143, .10);
+  --code-inline-ink:  #8a2a2e;
+  --code-accent:      #8a2a2e;
+
+  --shadow-sm: 0 1px 2px rgba(60, 40, 35, .05), 0 2px 8px rgba(60, 40, 35, .04);
+  --shadow-md: 0 2px 4px rgba(60, 40, 35, .06), 0 10px 26px rgba(60, 40, 35, .10);
+  --radius:    12px;
+  --radius-sm: 10px;
+  --ease:      cubic-bezier(.2, .7, .2, 1);
+
+ 
+  --pill1-bg: rgba(138, 42, 46, .10);  --pill1-ink: #7a2327; --pill1-bd: rgba(138, 42, 46, .28);
+  --pill2-bg: rgba(79, 111, 143, .12); --pill2-ink: #3e5b78; --pill2-bd: rgba(79, 111, 143, .30);
+  --pill3-bg: rgba(63, 125, 92, .12);  --pill3-ink: #2f6548; --pill3-bd: rgba(63, 125, 92, .30);
+  --pill4-bg: rgba(184, 124, 40, .13); --pill4-ink: #86560f; --pill4-bd: rgba(184, 124, 40, .32);
+
+}
+
+body.quarto-dark,
+body[data-bs-theme="dark"],
+html[data-bs-theme="dark"] {
+  --accent:        #e58a8d;
+  --accent-strong: #f2b0b2;
+  --accent-bright: #f0a3a5;
+  --accent-soft:   rgba(229, 138, 141, .12);
+  --accent-ring:   rgba(229, 138, 141, .36);
+  --on-accent:     #3a0f12;
+  --slate:         #8fb0cb;
+  --link:          #ee9a9d;
+
+  --ink-soft:      #aaa39d;
+  --line:          rgba(255, 255, 255, .09);
+  --line-strong:   rgba(255, 255, 255, .18);
+  --surface:       #2a2726;
+  --surface-2:     #302d2c;
+  --thead-bg:      #35312f;
+  --row-hover:     rgba(229, 138, 141, .09);
+  --stripe:        rgba(255, 255, 255, .025);
+
+  --code-bg:          #1e1c1b;
+  --code-inline-bg:   rgba(255, 255, 255, .09);
+  --code-inline-ink:  #f2b0b2;
+  --code-accent:      #e58a8d;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35), 0 2px 8px rgba(0, 0, 0, .25);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, .4), 0 10px 26px rgba(0, 0, 0, .35);
+
+  --pill1-bg: rgba(229, 138, 141, .15); --pill1-ink: #f2b0b2; --pill1-bd: rgba(229, 138, 141, .34);
+  --pill2-bg: rgba(143, 176, 203, .15); --pill2-ink: #a9c4da; --pill2-bd: rgba(143, 176, 203, .34);
+  --pill3-bg: rgba(120, 190, 150, .15); --pill3-ink: #9bd5b3; --pill3-bd: rgba(120, 190, 150, .34);
+  --pill4-bg: rgba(232, 176, 80, .15);  --pill4-ink: #f0c986; --pill4-bd: rgba(232, 176, 80, .34);
+
+}
+
+
+body { font-family: var(--font-body); }
+main.content {
+  font-family: var(--font-body);
+  font-size: .95rem;
+  line-height: 1.65;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+main.content strong, main.content b { font-weight: 600; }
+main.content li { margin-block: .15rem; }
+main.content h1, main.content h2, main.content h3, main.content h4,
+main.content h5, main.content h6,
+.quarto-title-banner h1, .quarto-title-banner .subtitle,
+#toc-title, .result-dialog header strong {
+  font-family: var(--font-display);
+  letter-spacing: -.005em;
+}
+main.content h2 { font-size: 1.2rem;  font-weight: 600; line-height: 1.3; letter-spacing: -.01em; margin-top: 2rem; }
+main.content h3 { font-size: 1.05rem; font-weight: 600; line-height: 1.35; letter-spacing: -.005em; margin-top: 1.6rem; }
+main.content h4 { font-size: .96rem;  font-weight: 600; line-height: 1.4; margin-top: 1.3rem; }
+
+main.content a:not(.download-r-button):not(.anchorjs-link):not(.btn) {
+  color: var(--link);
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, var(--link) 35%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: .2em;
+  transition: color .18s var(--ease), text-decoration-color .18s var(--ease);
+}
+main.content a:not(.download-r-button):not(.anchorjs-link):not(.btn):hover {
+  color: var(--accent-strong);
+  text-decoration-color: currentColor;
+}
+main.content hr {
+  border: 0; height: 1px; opacity: 1; margin: 2.4rem 0;
+  background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+}
+main.content blockquote {
+  margin-block: 1rem; padding: .6rem 1rem;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+main.content blockquote p:last-child { margin-bottom: 0; }
+::selection { background: var(--accent-ring); }
+
+.quarto-title-banner {
+  border-style: solid;
+  border-width: 0 0 4px 0;
+  border-image: linear-gradient(90deg, #e58a8d, #e8b96a) 1;
+  box-shadow: 0 12px 30px -24px rgba(40, 10, 10, .55);
+}
+.quarto-title-banner h1.title,
+.quarto-title-banner .title {
+  color: #fffdfd !important;
+  font-weight: 700;
+  font-size: clamp(1.7rem, 1.25rem + 1.5vw, 2.3rem);
+  line-height: 1.18;
+  letter-spacing: -.015em;
+  text-wrap: balance;
+}
+.quarto-title-banner .subtitle {
+  color: rgba(255, 255, 255, .86) !important;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 1rem;
+  margin-top: .4rem;
+}
+.quarto-title-banner .quarto-title-meta-heading {
+  font-family: var(--font-body);
+  font-size: .66rem; font-weight: 600;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: rgba(255, 255, 255, .66);
+}
+.quarto-title-banner .quarto-title-meta-contents,
+.quarto-title-banner .quarto-title-meta-contents p,
+.quarto-title-banner .quarto-title-meta-contents a {
+  font-family: var(--font-body);
+  font-size: .9rem; color: #faf8f8 !important;
+  text-indent: 0;
+}
+
+.banner-code {
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: #faf8f8 !important;
+  background: rgba(255, 255, 255, .10);
+  border: 1px solid rgba(250, 248, 248, .55);
+  border-radius: 999px;
+  transition: background-color .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+}
+.banner-code:hover, .banner-code:focus-visible {
+  background: rgba(255, 255, 255, .22);
+  border-color: #faf8f8;
+  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, .55);
+}
+
+#toc-title {
+  font-family: var(--font-body);
+  font-size: .7rem; font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--ink-soft);
+}
+#TOC[role="doc-toc"] ul > li > a,
+#TOC[role="doc-toc"] .nav-link {
+  font-family: var(--font-body);
+  font-size: .82rem; line-height: 1.4;
+  transition: color .18s var(--ease), border-color .18s var(--ease), padding-left .18s var(--ease);
+}
+#TOC[role="doc-toc"] ul > li > a:hover { color: var(--accent); }
+#TOC[role="doc-toc"] ul > li > a.active {
+  color: var(--accent) !important;
+  border-left-color: var(--accent) !important;
+  font-weight: 600;
+}
+
+main.content > section.level1 { margin-block: 2.8rem; }
+main.content section.level1 > h1 {
+  display: flex;
+  align-items: baseline;
+  gap: .6rem;
+  font-size: clamp(1.25rem, 1.12rem + .45vw, 1.55rem);
+  font-weight: 600;
+  line-height: 1.28;
+  letter-spacing: -.012em;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(90deg, var(--accent), var(--accent-bright)) left bottom / 3.5rem 2px no-repeat;
+  padding-bottom: .6rem;
+  margin-bottom: 1.1rem;
+}
+main.content .header-section-number {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: .66em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+  line-height: 1.5;
+  padding: .06rem .55rem;
+  margin: 0 .55rem 0 0;
+  border-radius: 999px;
+  vertical-align: .14em;
+  background: var(--pill2-bg); color: var(--pill2-ink); border: 1px solid var(--pill2-bd);
+}
+main.content section.level1 > h1 .header-section-number {
+  font-size: .64em; margin: 0; vertical-align: baseline;
+  background: var(--pill1-bg); color: var(--pill1-ink); border-color: var(--pill1-bd);
+}
+main.content h3 > .header-section-number { background: var(--pill3-bg); color: var(--pill3-ink); border-color: var(--pill3-bd); }
+main.content h4 > .header-section-number { background: var(--pill4-bg); color: var(--pill4-ink); border-color: var(--pill4-bd); }
+
+main.content .callout .callout-title-container { font-family: var(--font-body); font-size: .96rem; font-weight: 600; }
+main.content .callout .callout-body { font-size: .93rem; }
+main.content .callout p, main.content .callout li { text-indent: 0; }
+main.content .callout {
+  margin-block: .9rem;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border-left-width: .28rem;
+  border-top-color: var(--line);
+  border-right-color: var(--line);
+  border-bottom-color: var(--line);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .25s var(--ease);
+}
+main.content .callout:hover { box-shadow: var(--shadow-md); }
+
+.reading-box {
+  margin-block: .8rem 1.15rem;
+  padding: .85rem 1.1rem;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--slate) 9%, var(--surface)), var(--surface));
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--slate);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.reading-box p { margin: 0; text-align: left; text-indent: 0; }
+.reading-box p + p { margin-top: .55rem; }
+
+/* =====================================================================
+   CÓDIGO
+   ===================================================================== */
+main.content pre, main.content pre code, main.content code, main.content kbd, main.content samp {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+}
+main.content :not(pre) > code:not(.sourceCode) {
+  font-size: .84em; font-weight: 500;
+  padding: .12em .4em;
+  border-radius: 6px;
+  background: var(--code-inline-bg);
+  color: var(--code-inline-ink);
+}
+main.content div.sourceCode {
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--code-accent);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  margin-block: .5rem 1rem;
+}
+main.content div.sourceCode pre {
+  background: transparent; border: 0; margin: 0;
+  padding: .85rem 1rem;
+  border-radius: var(--radius-sm);
+}
+main.content pre code { font-size: .79rem; line-height: 1.6; }
+main.content .cell-output pre {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--slate);
+  border-radius: var(--radius-sm);
+  padding: .75rem 1rem;
+  margin-block: .5rem 1rem;
+}
+main.content .cell-output pre code { font-size: .78rem; background: transparent; color: inherit; }
+
+main.content .cell details > summary,
+main.content details.code-fold > summary {
+  display: inline-flex; align-items: center; gap: .45rem;
+  font-family: var(--font-body);
+  font-size: .76rem; font-weight: 600; line-height: 1.2; letter-spacing: .01em;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: .34rem .85rem;
+  cursor: pointer; user-select: none; list-style: none;
+  transition: color .18s var(--ease), border-color .18s var(--ease),
+              background-color .18s var(--ease), transform .18s var(--ease);
+}
+main.content details > summary::-webkit-details-marker { display: none; }
+main.content .cell details > summary::before,
+main.content details.code-fold > summary::before {
+  content: ""; width: .36rem; height: .36rem;
+  border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg); transition: transform .2s var(--ease);
+}
+main.content details[open] > summary::before { transform: rotate(45deg); }
+main.content .cell details > summary:hover,
+main.content details.code-fold > summary:hover {
+  color: var(--accent); border-color: var(--accent); background: var(--accent-soft);
+  transform: translateY(-1px);
+}
+main.content details[open] > summary { margin-bottom: .5rem; }
+main.content summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.code-copy-button {
+  border-radius: 8px !important;
+  transition: color .18s var(--ease), border-color .18s var(--ease), background-color .18s var(--ease);
+}
+.code-copy-button:hover { color: var(--accent) !important; }
+
+/* =====================================================================
+   TABELAS 
+   ===================================================================== */
+:is(main.content, .result-dialog) table {
+  font-family: var(--font-body);
+  font-size: .82rem;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  --bs-table-striped-bg: var(--stripe);
+}
+:is(main.content, .result-dialog) table th,
+:is(main.content, .result-dialog) table td {
+  padding: .45rem .7rem;
+  border-color: var(--line);
+  vertical-align: middle;
+}
+:is(main.content, .result-dialog) table thead th,
+:is(main.content, .result-dialog) table.dataTable > thead > tr > th {
+  font-family: var(--font-body);
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .015em;
+  color: color-mix(in srgb, var(--bs-body-color) 78%, var(--ink-soft));
+  background: var(--thead-bg);
+  border-bottom: 1px solid var(--line-strong);
+  white-space: nowrap;
+}
+:is(main.content, .result-dialog) table.dataTable > thead > tr > th[class*="sorting"],
+:is(main.content, .result-dialog) table.dataTable > thead > tr > th[class*="dt-orderable"] {
+  padding-right: 1.7rem;
+}
+:is(main.content, .result-dialog) table.dataTable > tbody > tr > td,
+:is(main.content, .result-dialog) table.dataTable > tbody > tr > th {
+  border-top: 1px solid var(--line);
+  border-bottom: 0;
+}
+:is(main.content, .result-dialog) table.dataTable,
+:is(main.content, .result-dialog) table.dataTable > tbody > tr {
+  background-color: transparent;
+}
+:is(main.content, .result-dialog) table tbody tr > * {
+  transition: background-color .15s var(--ease), box-shadow .15s var(--ease);
+}
+:is(main.content, .result-dialog) table tbody tr:hover > * {
+  background-color: var(--row-hover);
+  box-shadow: inset 0 0 0 9999px var(--row-hover);
+  --bs-table-bg-state: var(--row-hover);
+}
+:is(main.content, .result-dialog) table:not(.dataTable) {
+  border: 1px solid var(--line);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+:is(main.content, .result-dialog) table:not(.dataTable) tbody tr:last-child > * { border-bottom: 0; }
+:is(main.content, .result-dialog) table caption {
+  caption-side: top;
+  font-size: .8rem; color: var(--ink-soft);
+  padding: 0 .2rem .5rem;
+}
+figure table:not(.dataTable) { border: 0; box-shadow: none; }
+
+
+.datatables.html-widget {
+  box-sizing: border-box;
+  padding: .7rem .85rem .55rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+figure .datatables.html-widget { padding: 0; border: 0; box-shadow: none; background: transparent; }
+.result-dialog .datatables.html-widget { box-shadow: none; }
+
+.dataTables_wrapper, .dt-container { font-family: var(--font-body); font-size: .8rem; }
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_paginate,
+.dt-container .dt-length, .dt-container .dt-search, .dt-container .dt-info, .dt-container .dt-paging {
+  font-size: .78rem; color: var(--ink-soft);
+}
+.dataTables_wrapper input, .dataTables_wrapper select,
+.dt-container input, .dt-container select {
+  font-family: var(--font-body); font-size: .78rem;
+  color: var(--bs-body-color);
+  background-color: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: .22rem .5rem;
+  transition: border-color .18s var(--ease), box-shadow .18s var(--ease);
+}
+.dataTables_wrapper input:focus, .dataTables_wrapper select:focus,
+.dt-container input:focus, .dt-container select:focus {
+  outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring);
+}
+.datatables thead td input, .datatables thead td select { font-size: .74rem; padding: .18rem .45rem; }
+.datatables .selectize-control .selectize-input {
+  min-height: 0; font-size: .74rem; padding: .2rem .45rem; border-radius: 6px;
+  background: var(--surface-2); color: var(--bs-body-color);
+  border: 1px solid var(--line-strong); box-shadow: none;
+}
+.selectize-dropdown {
+  font-size: .76rem; border-radius: 8px; background: var(--surface); color: var(--bs-body-color);
+  border: 1px solid var(--line-strong); box-shadow: var(--shadow-md);
+}
+.selectize-dropdown .active { background: var(--accent-soft); color: var(--accent-strong); }
+.datatables .noUi-connect { background: var(--accent); }
+
+.dataTables_wrapper .dataTables_paginate .paginate_button,
+.dt-container .dt-paging .dt-paging-button {
+  font-size: .76rem !important;
+  padding: .22rem .6rem !important;
+  margin: 0 .1rem !important;
+  color: var(--ink-soft) !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  transition: color .18s var(--ease), background-color .18s var(--ease), border-color .18s var(--ease);
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover,
+.dt-container .dt-paging .dt-paging-button:hover {
+  color: var(--accent) !important; background: var(--accent-soft) !important;
+  border-color: var(--accent-ring) !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover,
+.dt-container .dt-paging .dt-paging-button.current,
+.dt-container .dt-paging .dt-paging-button.current:hover {
+  color: var(--on-accent) !important; background: var(--accent) !important; border-color: var(--accent) !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+.dt-container .dt-paging .dt-paging-button.disabled { opacity: .4; }
+
+/* =====================================================================
+   FIGURAS
+   ===================================================================== */
+main.content figure {
+  margin-block: 1rem 1.4rem;
+  padding: .8rem .9rem .65rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+main.content figure img, .result-dialog figure img { border-radius: 8px; }
+body.quarto-dark :is(main.content, .result-dialog) figure img,
+body[data-bs-theme="dark"] :is(main.content, .result-dialog) figure img,
+html[data-bs-theme="dark"] :is(main.content, .result-dialog) figure img {
+  background: #fbfcfd; /* garante legibilidade de gráficos com fundo transparente */
+}
+main.content figcaption, main.content .figure-caption {
+  font-size: .8rem; line-height: 1.5; color: var(--ink-soft); margin-top: .55rem;
+}
+
+/* =====================================================================
+   BOTÃO DE EXPANSÃO 
+   ===================================================================== */
+.expand-controls { display: flex; justify-content: flex-end; margin: .2rem 0 .15rem; }
+.expand-controls button, .result-dialog button { font: inherit; cursor: pointer; }
+.expand-controls .expand-icon {
+  display: inline-grid; place-items: center; width: 2.25rem; height: 2.25rem;
+  border-radius: 10px; border: 1px solid var(--line-strong);
+  color: var(--ink-soft); background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition: color .18s var(--ease), border-color .18s var(--ease),
+              transform .18s var(--ease), box-shadow .18s var(--ease), background-color .18s var(--ease);
+}
+.expand-controls .expand-icon:hover,
+.expand-controls .expand-icon:focus-visible {
+  border-color: var(--accent); color: var(--accent); background: var(--accent-soft);
+  outline-offset: 2px; transform: translateY(-1px); box-shadow: var(--shadow-md);
+}
+.expand-controls .expand-icon:focus-visible { outline: 2px solid var(--accent); }
+.expand-controls .expand-icon:active { transform: scale(.94); }
+.expand-icon svg { width: 1.05rem; height: 1.05rem; transition: transform .2s var(--ease); }
+.expand-icon:hover svg { transform: scale(1.12); }
+
+.result-dialog { width: 100%; max-width: none; height: 100%; max-height: none;
+  margin: 0; padding: 0; border: 0; background: var(--bs-body-bg); color: var(--bs-body-color);
+  font-family: var(--font-body); }
+.result-dialog::backdrop { background: rgba(35, 22, 20, .55); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.result-dialog header { position: sticky; top: 0; z-index: 2; display: flex;
+  align-items: center; justify-content: space-between; gap: 1rem; padding: .85rem 1.25rem;
+  background: var(--bs-body-bg); border-bottom: 1px solid var(--line);
+  box-shadow: 0 6px 18px -14px rgba(60, 40, 35, .5); }
+.result-dialog header strong { font-size: .95rem; font-weight: 600; letter-spacing: -.01em; }
+.result-dialog header button {
+  border-radius: 999px; padding: .32rem .95rem; font-size: .78rem; font-weight: 600;
+  color: var(--bs-body-color); background: transparent; border: 1px solid var(--line-strong);
+  transition: color .18s var(--ease), border-color .18s var(--ease),
+              background-color .18s var(--ease), transform .18s var(--ease);
+}
+.result-dialog header button:hover, .result-dialog header button:focus-visible {
+  color: var(--accent); border-color: var(--accent); background: var(--accent-soft); transform: translateY(-1px);
+}
+.result-dialog .expanded-content { overflow: auto; padding: 1rem clamp(1rem, 4vw, 4rem); }
+.result-dialog .expanded-content table:not(.dataTable) { width: 100%; }
+.result-dialog .expanded-content figure { margin-inline: auto; }
+.result-dialog .expanded-content figure img { display: block; margin: auto; width: auto;
+  max-width: 100%; max-height: 78vh; object-fit: contain; }
+
+/* =====================================================================
+   MAPA
+   ===================================================================== */
+.map-zoom { margin: .5rem 0; display: flex; flex-wrap: wrap; align-items: center; gap: .55rem;
+  width: fit-content; max-width: 100%; padding: .4rem .65rem;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-sm); }
+.map-zoom input { width: min(13rem, 52vw); accent-color: var(--accent); cursor: pointer; }
+.map-zoom button {
+  min-width: 2rem; height: 2rem; padding: 0 .75rem;
+  font-family: var(--font-body); font-size: .8rem; font-weight: 600; line-height: 1;
+  color: var(--ink-soft); background: transparent;
+  border: 1px solid var(--line-strong); border-radius: 999px; cursor: pointer;
+  transition: color .18s var(--ease), border-color .18s var(--ease),
+              background-color .18s var(--ease), transform .18s var(--ease);
+}
+.map-zoom button:hover, .map-zoom button:focus-visible {
+  color: var(--accent); border-color: var(--accent); background: var(--accent-soft); transform: translateY(-1px);
+}
+.map-zoom button:active { transform: scale(.95); }
+.map-zoom output {
+  min-width: 2.9rem; text-align: center; font-size: .78rem; font-weight: 600;
+  font-variant-numeric: tabular-nums; color: var(--ink-soft);
+}
+.map-zoom-viewport { display: block; width: 100%; min-width: 0; box-sizing: border-box; overflow: auto; max-height: 72vh; scrollbar-gutter: stable; border: 1px solid var(--line);
+  border-radius: var(--radius-sm); background: var(--surface); scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.map-zoom-viewport:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.map-zoom-canvas { display: block; flex: none; max-width: none !important; }
+.map-zoom-viewport img { display: block; width: 100% !important; max-width: none !important; max-height: none !important; height: auto !important; margin: 0 !important; }
+
+/* =====================================================================
+   BOTÃO DE DOWNLOAD 
+   ===================================================================== */
+.download-r-footer { display: flex; justify-content: center; margin: 1.5rem 0 2rem; }
+.download-r-button {
+  display: inline-flex; align-items: center; gap: .65rem;
+  padding: .75rem 1.2rem; border-radius: var(--radius);
+  font-family: var(--font-body); font-size: .9rem; font-weight: 600; letter-spacing: .005em;
+  color: #fff; text-decoration: none;
+  background: linear-gradient(120deg, #5f1a1e 0%, #8a2a2e 50%, #b4474b 100%);
+  background-size: 200% 100%; background-position: 0 0;
+  border: 1px solid rgba(255, 255, 255, .14);
+  box-shadow: 0 6px 18px -8px rgba(95, 26, 30, .6);
+  transition: background-position .45s var(--ease), transform .2s var(--ease), box-shadow .2s var(--ease);
+}
+.download-r-button:hover, .download-r-button:focus-visible {
+  background-position: 100% 0; color: #fff;
+  transform: translateY(-2px); box-shadow: 0 12px 26px -10px rgba(138, 42, 46, .6);
+}
+.download-r-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.download-r-button:active { transform: translateY(0) scale(.985); }
+.download-r-button svg { width: 1.1rem; height: 1.1rem; transition: transform .25s var(--ease); }
+.download-r-button:hover svg { transform: translateY(2px); }
+.download-r-button span { font-family: var(--font-mono); font-size: .72em; font-weight: 500; color: #fff;
+  background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 6px; padding: .1rem .4rem; }
+
+
+.datatables table.dataTable { margin: 0 !important; }
+.datatables table.dataTable thead td {
+  background: var(--surface-2);
+  padding: .35rem .5rem;
+  border-bottom: 1px solid var(--line);
+}
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { margin-bottom: .65rem; }
+.dataTables_wrapper .dataTables_filter input { min-width: 10rem; }
+.dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_paginate { margin-top: .75rem; padding-top: 0; }
+.dataTables_wrapper .dataTables_scrollBody { border-bottom: 1px solid var(--line); }
+.datatables table.dataTable tbody td:first-child { font-weight: 500; }
+.datatables table.dataTable td, .datatables table.dataTable th { text-indent: 0; }
+
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+</style>
+```
+
+```{r}
+#| label: setup-tabelas
+#| include: false
+
+
+tabela_dt = function(dados, nomes = names(dados), filtro = FALSE,
+                     numeros = NULL, linhas = 10L) {
+  curta = nrow(dados) <= linhas
+  tabela = DT::datatable(
+    dados,
+    rownames = FALSE,
+    colnames = nomes,
+    filter = if (filtro && !curta) "top" else "none",
+    class = "compact hover stripe",
+    options = list(
+      dom = if (curta) "t" else "lfrtip",
+      paging = !curta,
+      pageLength = linhas,
+      lengthMenu = c(5, 10, 25, 50, 100),
+      scrollX = TRUE,
+      language = list(
+        search = "Buscar:",
+        lengthMenu = "Mostrar _MENU_ linhas",
+        info = "Mostrando _START_ a _END_ de _TOTAL_ linhas",
+        infoEmpty = "Nenhuma linha para mostrar",
+        infoFiltered = "(filtrado de _MAX_ linhas)",
+        zeroRecords = "Nenhum registro encontrado",
+        emptyTable = "Tabela vazia",
+        paginate = list(first = "Primeira", last = "Última",
+                        `next` = "Próxima", previous = "Anterior")
+      )
+    )
+  )
+  
+  for (coluna in names(numeros)) {
+    tabela = DT::formatRound(tabela, coluna, digits = numeros[[coluna]],
+                             mark = ".", dec.mark = ",")
+  }
+  tabela
+}
+```
+
+<div class="logo">
+
+  <img src="UFV.png" alt="Logo da UFV">
+
+</div>
+
+# Como utilizar este roteiro
+
+::: {.reading-box}
+Em cada etapa, tentem primeiro escrever a própria solução em R e usem os resultados do relatório para conferi-la. Se travarem, peçam à IA uma pista ou um exemplo pequeno, testem-no em poucas linhas e só depois comparem com o código em **código R**.
+:::
+
+::: {.callout-tip collapse="true"}
+## Download opcional dos dados no R
+
+Os arquivos fenotípicos e genotípicos necessários já estão disponíveis no grupo. Quem preferir baixar as duas pastas completas diretamente do CyVerse pode executar o código abaixo no R, a partir da raiz da pasta `IA-week`. O download pode ocupar vários gigabytes.
+
+```{r}
+#| label: download-g2f
+#| eval: false
+
+# Instale o xml2 uma vez, se necessário: install.packages("xml2")
+local({
+  base_url = paste0(
+    "https://data.cyverse.org/dav-anon/iplant/home/shared/",
+    "commons_repo/curated/"
+  )
+  datasets = c(
+    "GenomesToFields_G2F_data_2023",
+    "GenomesToFields_G2F_genotypic_data_2014_to_2023"
+  )
+
+  # Percorre a estrutura de pastas do CyVerse e reaproveita arquivos já baixados.
+  download_folder = function(url, folder) {
+    page = xml2::read_html(url)
+    links = xml2::xml_attr(xml2::xml_find_all(page, ".//a[@href]"), "href")
+    links = unique(xml2::url_absolute(links, url))
+    links = links[!is.na(links) & startsWith(links, url) & links != url]
+    links = links[!grepl("[?#]", links)]
+    relative = substring(links, nchar(url) + 1L)
+    direct = nzchar(relative) & !grepl("/", sub("/$", "", relative), fixed = TRUE)
+    if (!any(direct)) stop("Não foi possível ler o diretório do CyVerse: ", url)
+
+    dir.create(folder, recursive = TRUE, showWarnings = FALSE)
+    for (item in links[direct]) {
+      name = utils::URLdecode(sub("/$", "", substring(item, nchar(url) + 1L)))
+      if (name %in% c("", ".", "..") || grepl("[/\\\\:]", name)) next
+
+      destination = file.path(folder, name)
+      if (endsWith(item, "/")) {
+        download_folder(item, destination)
+      } else if (!file.exists(destination) || file.size(destination) == 0) {
+        temporary = tempfile(tmpdir = folder)
+        tryCatch({
+          status = utils::download.file(item, temporary, mode = "wb")
+          if (status != 0L || !file.exists(temporary) || file.size(temporary) == 0) {
+            stop("Falha no download: ", item)
+          }
+          if (!file.rename(temporary, destination)) stop("Não foi possível salvar: ", destination)
+        }, finally = unlink(temporary))
+      }
+    }
+  }
+
+  previous_options = options(timeout = max(3600, getOption("timeout")))
+  tryCatch({
+    for (dataset in datasets) {
+      download_folder(paste0(base_url, dataset, "/"), file.path("G2F", dataset))
+    }
+  }, finally = options(previous_options))
+})
+```
+:::
+
+# Conhecer o arquivo e escolher o ensaio
+
+::: {.callout-note}
+## Leitura de apoio
+
+Abram o README de 2023 e o PDF `g2f_2023_phenotypic_data_description.pdf`. Localizem a descrição dos ensaios e a diferença entre os arquivos bruto e limpo. Pacote oficial: [G2F 2023](https://doi.org/10.25739/rzzy-3n27).
+
+:::
+
+::: {.callout-tip}
+## Dica
+
+Abram o CSV limpo, localizem a coluna do experimento e montem uma tabela que conte, por ensaio, as parcelas, os materiais distintos e os locais. Cada linha representa uma parcela, e um mesmo híbrido pode ocupar várias parcelas.
+
+:::
+
+::: {.callout-important collapse="true"}
+## Confiram o resultado
+
+O arquivo tem 19.434 linhas e 39 colunas. O ensaio `G2F_Main` tem 17.466 parcelas, 539 identificadores de materiais e 26 locais.
+
+:::
+
+::: {.reading-box}
+**Pesquise:** como ler um CSV no R, filtrar linhas e contar valores distintos.
+:::
+
+```{r}
+
+# Lê os dados oficiais limpos de parcelas, a partir da pasta do projeto IA-week.
+
+phenotypes = read.csv(file.path(
+
+  "G2F", "GenomesToFields_G2F_data_2023", "a._2023_phenotypic_data",
+
+  "g2f_2023_phenotypic_clean_data.csv"
+
+), check.names = FALSE)
+
+# Conta identificadores não vazios sem interpretar a codificação de caracteres.
+
+count_distinct = function(x) {
+
+  valid = !is.na(x) & !grepl("^[[:space:]]*$", x, useBytes = TRUE)
+
+  length(unique(x[valid]))
+
+}
+
+descriptions = c(
+
+  G2F_Main = "Ensaio principal, com testemunhas em comum entre locais.",
+
+  YS = "Ensaio Yellow Stripe com híbridos de referência avaliados ao longo dos anos.",
+
+  HIP_Hybrid = "Fenotipagem intensiva de híbridos.",
+
+  HIP_Inbred = "Fenotipagem intensiva de linhagens."
+
+)
+
+report_tables = list()
+
+report_tables$experiments = do.call(rbind, lapply(
+
+  split(phenotypes, phenotypes$Experiment), function(rows) {
+
+    experiment = rows$Experiment[1L]
+
+    description = unname(descriptions[experiment])
+
+    data.frame(
+
+      Experiment = experiment, Plots = nrow(rows),
+
+      Entries = count_distinct(rows$Pedigree),
+
+      Locations = count_distinct(rows[["Field-Location"]]),
+
+      Description = if (is.na(description)) "Consulte o guia do ensaio." else description
+
+    )
+
+  }
+
+))
+
+main = subset(phenotypes, Experiment == "G2F_Main")
+
+tabela_dt(report_tables$experiments,
+          nomes = c("Ensaio", "Parcelas", "Materiais", "Locais", "Descrição"),
+          numeros = c(Plots = 0, Entries = 0, Locations = 0))
+
+```
+
+# Reconhecer o híbrido e os parentais
+
+::: {.callout-note}
+## Leitura de apoio
+
+Procurem, no PDF de fenótipos, a seção sobre população e testador. Um híbrido simples resulta do cruzamento entre duas linhagens. Para aprofundar o conceito, consultem [Aula de melhoramento](https://docentes.esalq.usp.br/aafgarci/pub/Aula4Melhora.pdf) · [Aula 4 de Genética](https://www.genetica.esalq.usp.br/sites/default/files/disciplina_arquivos/Aula4%20-%20JBP.pdf) · [Aula 10 de Genética](https://www.genetica.esalq.usp.br/sites/default/files/disciplina_arquivos/Aula10%20-%20JBP.pdf) · [Melhoramento genético do milho — Aegro](https://aegro.com.br/blog/melhoramento-genetico-do-milho/) e a [descrição da população do G2F](https://www.genomes2fields.org/about/project-overview/).
+
+:::
+
+::: {.callout-tip}
+## Dica
+
+Na coluna `Pedigree`, escolham alguns identificadores de híbridos simples, escritos com barra. Separem os IDs em `DH1` e `DH2`, guardem o identificador original e registrem os casos que precisam de revisão, como `LOCAL_CHECK`.
+
+:::
+
+::: {.callout-important collapse="true"}
+## Confiram o resultado
+
+Em `PHJ89/LH244`, o primeiro ID é `PHJ89` e o segundo é `LH244`. Os nomes `DH1` e `DH2` indicam a ordem dos IDs; consultem a documentação para descobrir a origem de cada parental.
+
+:::
+
+::: {.reading-box}
+**Pesquise:** linhagem, híbrido simples, duplo-haploide, testador, heterose e como separar texto por delimitador no R (manipulação de strings).
+:::
+
+```{r}
+
+# Separa os dois IDs parentais apenas nos registros com uma única barra.
+
+pedigree = main$Pedigree
+
+valid = !is.na(pedigree) & grepl("^[^/]+/[^/]+$", pedigree, useBytes = TRUE)
+
+parts = strsplit(pedigree[valid], "/", fixed = TRUE)
+
+main$DH1 = NA_character_
+
+main$DH2 = NA_character_
+
+main$DH1[valid] = trimws(vapply(parts, "[", character(1L), 1L))
+
+main$DH2[valid] = trimws(vapply(parts, "[", character(1L), 2L))
+
+pending = !valid | main$DH1 %in% "" | main$DH2 %in% ""
+
+main[pending, c("DH1", "DH2")] = NA_character_
+
+tabela_dt(head(main[, c("Pedigree", "DH1", "DH2")]))
+
+```
+
+# Produtividade de grãos
+
+::: {.callout-note}
+## Leitura de apoio
+
+No PDF de fenótipos, localizem a unidade de `Grain Yield (bu/A)` e as regras de descarte de parcelas.
+
+:::
+
+::: {.reading-box}
+Neste relatório, a produtividade é expressa em kg/ha, unidade mais familiar para quem trabalha com milho no Brasil.
+:::
+
+::: {.callout-tip}
+## Dica
+
+Contem as parcelas sem produtividade e as marcadas para descarte e observem quantas atendem aos dois critérios antes de aplicar o filtro.
+
+:::
+
+::: {.callout-important collapse="true"}
+## Confiram o resultado
+
+As 80 parcelas marcadas para descarte estão entre as 260 sem produtividade. Restam 17.206 parcelas.
+
+:::
+
+::: {.reading-box}
+**Pesquise:** valores ausentes (`NA`) no R, filtros lógicos e produção de milho no Brasil.
+:::
+
+::: {.callout-tip collapse="true"}
+
+## Curiosidade opcional — milho no Brasil
+
+Como vocês já estão usando kg/ha, aproveitem para explorar a produtividade média por região, as cultivares utilizadas e os desafios do cultivo. Sugestões de busca: produtividade de milho por estado e safra, milho de verão e safrinha, híbridos por região, déficit hídrico no florescimento, cigarrinha e enfezamentos. Ao consultar um número, observem sempre o local, a safra e a unidade. [Produção de milho — IBGE](https://www.ibge.gov.br/explica/producao-agropecuaria/milho-em-grao/br) · [Levantamento de safra — Conab](https://www.gov.br/conab/pt-br/assuntos/noticias/conab-estima-producao-de-361-7-milhoes-de-toneladas-de-graos-na-safra-2025-26) · [Mapa de híbridos da safrinha — Aegro](https://aegro.com.br/blog/mapa-hibridos-milho-safrinha-2026/) · [Cultivo de milho no Brasil — Syngenta](https://portal.syngenta.com.br/noticias/cultivo-de-milho-no-brasil-evolucao-desafios-e-inovacoes-do-mercado/) · [Artigo na Revista Ceres](https://www.scielo.br/j/rceres/a/N8fCSz8xJw7gy98s8nkTqmJ/?lang=pt).
+
+```{r}
+
+#| echo: false
+
+#| results: asis
+
+if (file.exists("Sistema-de-Producao-Cultivo-do-Milho.pdf")) {
+
+  cat("\n[Manual Sistema de Produção — Cultivo do Milho](Sistema-de-Producao-Cultivo-do-Milho.pdf)\n")
+
+}
+
+```
+
+:::
+
+```{r}
+
+# Identifica os pedigrees das testemunhas no ensaio principal, antes do filtro.
+
+checks = unique(main$Pedigree[main$Family %in% "CHECK"])
+
+checks = checks[!is.na(checks) & nzchar(checks)]
+
+# Conta a sobreposição entre os critérios antes de aplicar qualquer exclusão.
+
+discard = main[["Plot Discarded [enter 'yes' or blank]"]]
+
+flagged = !is.na(discard) & grepl(
+
+  "^[[:space:]]*yes[[:space:]]*$", discard, ignore.case = TRUE, useBytes = TRUE
+
+)
+
+missing_yield = is.na(main[["Grain Yield (bu/A)"]])
+
+keep = !missing_yield & !flagged
+
+report_tables$plot_filter = data.frame(
+
+  Original = nrow(main), Missing_Yield = sum(missing_yield),
+
+  Flagged = sum(flagged), Both = sum(missing_yield & flagged),
+
+  Removed = sum(!keep), Retained = sum(keep)
+
+)
+
+# Expressa a produtividade em kg/ha, unidade mais familiar para a equipe.
+
+analysis_plots = main[keep, , drop = FALSE]
+
+analysis_plots$GY = analysis_plots[["Grain Yield (bu/A)"]] *
+
+  (56 * 0.45359237 / 0.40468564224)
+
+tabela_dt(report_tables$plot_filter,
+          nomes = c("Total", "Sem produtividade", "Marcadas",
+                    "Ambos os critérios", "Excluídas", "Retidas"),
+          numeros = c(Original = 0, Missing_Yield = 0, Flagged = 0,
+                      Both = 0, Removed = 0, Retained = 0))
+
+```
+
+# Ler o campo de DEH1
+
+::: {.callout-note}
+## Leitura de apoio
+
+No guia do G2F, procurem o delineamento de 2023, descrito como **modified randomized complete block design** (delineamento em blocos completos casualizados modificado). Para aprender a reconhecer blocos menores dentro das repetições, consultem a apostila e as ilustrações. A organização observada em DEH1 lembra um alfa-látice, mas a classificação formal depende de como os materiais foram alocados no plano de casualização. [Guia do G2F](https://www.genomes2fields.org/about/project-overview/) · [Estatística Experimental — UFPR](https://docs.ufpr.br/~aanjos/CE213/apostila.pdf) · [Ilustrações de delineamentos e alfa-látice](https://knowledge-base.phenome-networks.com/kb/en/article/field-map-designs/).
+
+:::
+
+::: {.callout-tip}
+## Dica
+
+Localizem o painel **Repetição 1** no mapa e usem o controle de zoom para ampliar ou reduzir a figura. Cada quadrado representa uma parcela, com a posição registrada em `Range` e `Row`; os quadrados vermelhos marcam as parcelas excluídas da análise. Para identificar as parcelas do bloco 1, filtrem a repetição e o bloco na tabela e localizem no mapa as coordenadas correspondentes. Depois, usem a tabela para encontrar um híbrido plantado em dois blocos de uma mesma repetição.
+
+:::
+
+::: {.callout-important collapse="true"}
+## Confiram o resultado
+
+DEH1 tem 3 repetições, 20 blocos por repetição e 1.181 parcelas válidas. Cada bloco tem de 18 a 20 parcelas na base final; contagens menores que 20 são compatíveis com perdas ou exclusões. Um híbrido plantado em dois blocos da mesma repetição ocupa duas parcelas dentro dessa repetição.
+
+:::
+
+::: {.reading-box}
+**Pesquise:** parcela experimental, testemunha, DBC (delineamento em blocos casualizados), bloco incompleto, repetição e alfa-látice.
+:::
+
+```{r}
+
+# Mantém as posições observadas e classifica as testemunhas pelo pedigree.
+
+deh1 = subset(analysis_plots, `Field-Location` == "DEH1")
+
+deh1$Entry_Type = ifelse(deh1$Pedigree %in% checks, "Testemunha", "Genótipos regulares")
+
+deh1$Row_Position = suppressWarnings(as.numeric(as.character(deh1$Pass)))
+
+deh1$Range_Position = suppressWarnings(as.numeric(as.character(deh1$Range)))
+
+
+# Resume a hierarquia (repetição e bloco) e mantém a tabela completa de parcelas.
+
+report_tables$blocks = do.call(rbind, lapply(
+
+  split(deh1, list(deh1$Replicate, deh1$Block), drop = TRUE), function(rows) {
+
+    data.frame(
+
+      Replicate = rows$Replicate[1L], Block = rows$Block[1L],
+
+      Plots = nrow(rows), Entries = count_distinct(rows$Pedigree),
+
+      Check_Plots = sum(rows$Entry_Type == "Testemunha"),
+
+      Regular_Plots = sum(rows$Entry_Type != "Testemunha")
+
+    )
+
+  }
+
+))
+
+report_tables$blocks = report_tables$blocks[
+
+  order(report_tables$blocks$Replicate, report_tables$blocks$Block), ]
+
+report_tables$replicates = aggregate(
+
+  cbind(Blocks = rep(1L, nrow(report_tables$blocks)), Plots) ~ Replicate,
+
+  data = report_tables$blocks, FUN = sum
+
+)
+
+tabela_dt(report_tables$replicates,
+          nomes = c("Repetição", "Blocos", "Parcelas"),
+          numeros = c(Blocks = 0, Plots = 0))
+
+```
+
+:::: {#deh1-map}
+
+```{=html}
+<div class="map-zoom" aria-label="Controle de zoom do mapa">
+  <button type="button" data-zoom="-25" aria-label="Reduzir mapa">−</button>
+  <label for="deh1-zoom">Zoom</label>
+  <input id="deh1-zoom" type="range" min="50" max="300" step="5" value="100">
+  <output for="deh1-zoom" aria-live="polite">100%</output>
+  <button type="button" data-zoom="25" aria-label="Ampliar mapa">+</button>
+  <button type="button" data-zoom="reset">Redefinir</button>
+</div>
+```
+
+```{r}
+
+field_map = subset(main, `Field-Location` == "DEH1")
+field_map$Entry_Type = ifelse(
+  field_map$Plot_ID %in% deh1$Plot_ID,
+  ifelse(field_map$Pedigree %in% checks, "Testemunha", "Genótipos regulares"),
+  "Parcela excluída"
+)
+field_map$Row_Position = suppressWarnings(as.numeric(as.character(field_map$Pass)))
+field_map$Range_Position = suppressWarnings(as.numeric(as.character(field_map$Range)))
+map_position_ok = is.finite(field_map$Row_Position) & is.finite(field_map$Range_Position)
+
+
+local({
+  plots = field_map[map_position_ok, , drop = FALSE]
+  ggplot2::ggplot(plots, ggplot2::aes(Row_Position, Range_Position)) +
+    ggplot2::geom_tile(ggplot2::aes(fill = Entry_Type), colour = "white",
+                       linewidth = 0.18, width = 0.96, height = 0.96) +
+    ggplot2::scale_fill_manual(values = c(
+      "Testemunha" = "#3F7D5C", "Genótipos regulares" = "#B9CBD9",
+      "Parcela excluída" = "#C63238"
+    ), limits = c("Testemunha", "Genótipos regulares", "Parcela excluída"),
+    drop = FALSE) +
+    ggplot2::facet_wrap(~ Replicate, nrow = 1, labeller = ggplot2::as_labeller(function(x) paste("Repetição", x))) +
+    ggplot2::labs(x = "Row", y = "Range", fill = NULL) +
+    ggplot2::theme_minimal(base_size = 15) +
+    ggplot2::theme(legend.position = "bottom", panel.grid = ggplot2::element_blank())
+})
+```
+
+::::
+
+::: {.reading-box}
+**Cores do mapa:** verde para as testemunhas, azul-claro para os genótipos regulares e vermelho para as parcelas excluídas que têm coordenadas registradas.
+:::
+
+Parcelas sem posição numérica no mapa: **`r sum(!map_position_ok)`**. As tabelas abaixo são interativas: ordenem, filtrem e pesquisem para explorar os blocos e as parcelas de DEH1 retidas na análise.
+
+```{r}
+
+# Explora todos os blocos.
+
+tabela_dt(report_tables$blocks,
+          nomes = c("Repetição", "Bloco", "Parcelas", "Materiais",
+                    "Parcelas de testemunhas", "Parcelas regulares"),
+          filtro = TRUE)
+
+```
+
+```{r}
+
+# Explora os híbridos e as testemunhas em cada parcela observada.
+
+report_tables$plots = deh1[order(deh1$Replicate, deh1$Block,
+
+                               deh1$Range_Position, deh1$Row_Position), c(
+
+  "Replicate", "Block", "Range", "Pass", "Plot_ID", "Pedigree", "Entry_Type", "GY"
+
+)]
+
+names(report_tables$plots)[names(report_tables$plots) == "Pass"] = "Row"
+
+tabela_dt(report_tables$plots,
+          nomes = c("Repetição", "Bloco", "Range", "Row", "Plot_ID",
+                    "Pedigree", "Tipo de entrada", "GY (kg/ha)"),
+          filtro = TRUE, numeros = c(GY = 1))
+
+```
+
+# Montar e conferir a base final
+
+::: {.callout-tip}
+## Dica
+
+Montem `yield_data` com uma linha por parcela e preservem as colunas de ambiente, delineamento e posição, para poder rastrear a produtividade até o campo.
+
+:::
+
+| Informação | Colunas |
+|---|---|
+| Local | `Field-Location` |
+| Delineamento | `Replicate`, `Block` |
+| Parcela e posição | `Plot_ID`, `Range`, `Row` |
+| Híbrido, parentais e testemunha | `Pedigree`, `DH1`, `DH2`, `Family` |
+| Produtividade em kg/ha | `GY` |
+
+::: {.callout-important collapse="true"}
+## Confiram o resultado
+
+Espera-se obter 17.206 linhas e 11 colunas. Verifiquem se cada combinação de local e `Plot_ID` é única e se toda parcela tem produtividade. Escolham uma linha de `yield_data` e rastreiem o local, a repetição, o bloco, o híbrido e o valor de `GY` (kg/ha). Os casos com parentais pendentes continuam disponíveis para a análise de produtividade.
+
+:::
+
+```{r}
+
+# Seleciona as colunas da base compartilhada, com uma linha por parcela.
+
+yield_data = analysis_plots[, c(
+
+  "Field-Location", "Replicate", "Block", "Plot_ID", "Range", "Pass",
+
+  "Pedigree", "DH1", "DH2", "Family", "GY"
+
+), drop = FALSE]
+
+names(yield_data)[names(yield_data) == "Pass"] = "Row"
+rownames(yield_data) = NULL
+
+stopifnot(!anyDuplicated(yield_data[, c("Field-Location", "Plot_ID")]),
+
+          all(is.finite(yield_data$GY)))
+
+unresolved = is.na(yield_data$DH1) | is.na(yield_data$DH2)
+
+report_tables$parental_review = as.data.frame(
+
+  table(Pedigree = yield_data$Pedigree[unresolved], useNA = "ifany"),
+
+  responseName = "Plots"
+
+)
+
+tabela_dt(data.frame(
+  Plots = nrow(yield_data), Columns = ncol(yield_data),
+  Locations = count_distinct(yield_data[["Field-Location"]]),
+  Plots_With_Unresolved_Parents = sum(unresolved)
+), nomes = c("Parcelas", "Colunas", "Locais", "Parcelas com parentais pendentes"),
+   numeros = c(Plots = 0, Columns = 0, Locations = 0,
+               Plots_With_Unresolved_Parents = 0))
+
+tabela_dt(report_tables$parental_review,
+          nomes = c("Pedigree", "Parcelas"), numeros = c(Plots = 0))
+
+```
+
+::: {.reading-box}
+Guardem o código usado para reproduzir `yield_data`. Na etapa seguinte, consultem o README genotípico e a chave das linhagens para relacionar os dois IDs aos marcadores. Pacote genotípico: [G2F 2014–2023](https://doi.org/10.25739/RAGT-7213).
+:::
+
+# Médias ajustadas de produtividade por híbrido e local
+
+A análise em etapas (*stage-wise analysis*) parte da produtividade de cada parcela. Na primeira etapa, ajustamos um modelo por local para obter a média ajustada de cada híbrido (BLUE) e o respectivo erro-padrão. Na segunda etapa, essas médias poderão ser associadas aos marcadores genotípicos por meio de `DH1` e `DH2`.
+
+::: {.callout-note collapse="true"}
+## Leitura de apoio
+
+Comecem pela diferença entre média observada e média ajustada. Em seguida, consultem os materiais de Felipe Ferrão e os artigos sobre análise em etapas.
+
+- [Médias observadas e médias ajustadas — Minitab](https://support.minitab.com/pt-br/minitab/help-and-how-to/statistical-modeling/anova/supporting-topics/anova-statistics/data-means-vs-fitted-means/)
+- [Aulas e materiais de ensino — Felipe Ferrão](https://lfelipe-ferrao.github.io/teaching/)
+- [Análise em duas etapas de ensaios multiambientais — PubMed Central](https://pmc.ncbi.nlm.nih.gov/articles/PMC10033618/)
+- [Leitura complementar — G3](https://academic.oup.com/g3journal/article/14/12/jkae250/7903473)
+- [Leitura complementar — Theoretical and Applied Genetics](https://link.springer.com/article/10.1007/s00122-026-05204-x)
+:::
+
+## Modelo de campo
+
+| Termo | Papel no modelo |
+|---|---|
+| `GY` | Produtividade da parcela em kg/ha. |
+| `Pedigree` | Efeito fixo do híbrido. |
+| `Replicate` | Efeito fixo da repetição dentro do local. |
+| `Replicate:Block` | Efeito aleatório do bloco dentro da repetição. |
+
+::: {.callout-tip}
+## Dica
+
+Comecem por DEH1. Escolham um híbrido, identifiquem as repetições e os blocos em que ele foi plantado e comparem a média simples das parcelas com o BLUE retornado pelo modelo. Depois, repitam o ajuste para todos os locais e confiram o diagnóstico.
+:::
+
+```{r}
+#| label: first-stage-asreml
+
+suppressPackageStartupMessages(library(asreml))
+
+
+silenciar = function(expr) {
+  utils::capture.output(resultado <- expr)
+  resultado
+}
+
+# Guarda os IDs parentais para a etapa seguinte.
+parent_lookup = unique(yield_data[, c("Pedigree", "DH1", "DH2")])
+if (anyDuplicated(parent_lookup$Pedigree)) {
+  stop("Alguns pedigrees têm IDs parentais conflitantes.")
+}
+
+# Ajusta cada local separadamente e guarda um diagnóstico de cada ajuste.
+local_results = lapply(
+  split(yield_data, yield_data[["Field-Location"]]),
+  function(plots) {
+    location = plots[["Field-Location"]][1L]
+    for (column in c("Pedigree", "Replicate", "Block")) {
+      plots[[column]] = factor(plots[[column]])
+    }
+    diagnostic = data.frame(
+      Field_Location = location, Plots = nrow(plots),
+      Pedigrees = nlevels(plots$Pedigree), Converged = NA,
+      Estimable_Means = NA_integer_, Status = "Erro no ajuste", Message = ""
+    )
+
+    tryCatch({
+      fit = silenciar(asreml(
+        fixed = GY ~ Pedigree + Replicate,
+        random = ~ Replicate:Block,
+        data = plots
+      ))
+      diagnostic$Converged = isTRUE(fit$converge)
+      if (!diagnostic$Converged) {
+        diagnostic$Status = "Sem convergência"
+        return(list(blue = NULL, diagnostic = diagnostic))
+      }
+
+      diagnostic$Status = "Erro ao obter médias"
+      estimates = silenciar(predict(fit, classify = "Pedigree"))$pvals
+      valid = estimates$status %in% "Estimable" &
+        is.finite(estimates$predicted.value) &
+        is.finite(estimates$std.error)
+
+      diagnostic$Estimable_Means = sum(valid)
+      diagnostic$Status = if (sum(valid) == diagnostic$Pedigrees) {
+        "Concluído"
+      } else {
+        "Médias estimáveis incompletas"
+      }
+      blue = data.frame(
+        Field_Location = rep(location, sum(valid)),
+        Pedigree = as.character(estimates$Pedigree[valid]),
+        BLUE = estimates$predicted.value[valid],
+        SE = estimates$std.error[valid]
+      )
+      list(blue = blue, diagnostic = diagnostic)
+    }, error = function(e) {
+      diagnostic$Message = conditionMessage(e)
+      list(blue = NULL, diagnostic = diagnostic)
+    })
+  }
+)
+
+fit_summary = do.call(rbind, lapply(local_results, `[[`, "diagnostic"))
+tabela_dt(fit_summary,
+          nomes = c("Local", "Parcelas", "Híbridos", "Convergiu",
+                    "Médias estimáveis", "Situação", "Mensagem"),
+          numeros = c(Plots = 0, Pedigrees = 0, Estimable_Means = 0))
+
+blue_data = do.call(rbind, lapply(local_results, `[[`, "blue"))
+if (is.null(blue_data) || !nrow(blue_data)) {
+  stop("Nenhuma média ajustada foi obtida. Verifique fit_summary.")
+}
+
+# Associa os parentais e verifica a chave da base de saída.
+parent_row = match(blue_data$Pedigree, parent_lookup$Pedigree)
+stopifnot(!anyNA(parent_row))
+blue_data$DH1 = parent_lookup$DH1[parent_row]
+blue_data$DH2 = parent_lookup$DH2[parent_row]
+blue_data = blue_data[, c("Field_Location", "Pedigree", "DH1", "DH2", "BLUE", "SE")]
+rownames(blue_data) = NULL
+stopifnot(!anyDuplicated(blue_data[, c("Field_Location", "Pedigree")]))
+
+tabela_dt(blue_data,
+          nomes = c("Local", "Pedigree", "DH1", "DH2",
+                    "BLUE (kg/ha)", "SE (kg/ha)"),
+          filtro = TRUE, numeros = c(BLUE = 1, SE = 2))
+```
+
+::: {.callout-important}
+## Entrega — médias ajustadas
+
+Entreguem o arquivo `data/blue_data.csv`, com uma linha por **híbrido × local** e as colunas `Field_Location`, `Pedigree`, `DH1`, `DH2`, `BLUE` e `SE`, e o arquivo `data/fit_summary.csv`, com o diagnóstico de cada local. `BLUE` e `SE` estão em kg/ha. Antes de exportar, confiram se todos os locais convergiram e se o número de médias estimáveis corresponde ao de híbridos avaliados em cada local. Registrem no diagnóstico as diferenças que encontrarem.
+:::
+
+`data/`.
+
+```{r}
+#| label: export-adjusted-means
+
+dir.create("data", showWarnings = FALSE)
+write.csv(blue_data, file.path("data", "blue_data.csv"), row.names = FALSE)
+write.csv(fit_summary, file.path("data", "fit_summary.csv"), row.names = FALSE)
+```
+
+# Materiais para aprofundamento {#materiais-para-aprofundamento .unnumbered}
+
+Abram o tema que ajuda na etapa em que estão trabalhando.
+
+::: {.callout-note collapse="true"}
+
+## Genética básica
+
+- [Cromossomos e divisão celular — UFS/CESAD](https://cesad.ufs.br/ORBI/public/uploadCatalago/15350516022012Genetica_Basica_Aula_1.pdf)
+
+- [Leis de Mendel e extensões — UFS/CESAD](https://cesad.ufs.br/ORBI/public/uploadCatalago/15350816022012Genetica_Basica_Aula_2.pdf)
+
+- [Segunda lei de Mendel — ESALQ/USP](https://edisciplinas.usp.br/mod/resource/view.php?id=3144518)
+
+- [Primeira lei aplicada à agricultura — FAG](https://fag.edu.br/mvc/assets/cityfarm/assets/documentos/banners/2025/PRIMEIRA%20LEI%20DE%20MENDEL%20NA%20GEN%C3%89TICA%20APLICADA%20NA%20AGRICULTURA.pdf)
+
+- [Primeira lei de Mendel — IFSC](https://docente.ifsc.edu.br/leandro.parussolo/MaterialDidatico/Biologia%20-%20Fase%204/Aula%203%20-%201a%20lei%20de%20Mendel.pdf)
+
+:::
+
+::: {.callout-note collapse="true"}
+
+## Heterose, endogamia e milho híbrido
+
+- [Inbreeding and Heterosis — Iowa State](https://iastate.pressbooks.pub/cropgenetics/chapter/inbreeding-and-heterosis-2/)
+
+- [Inbreeding and Heterosis — Plant Breeding E-Learning](https://pbea.agron.iastate.edu/files/2021/11/Inbreeding-and-Heterosis.pdf)
+
+- [Endogamia, heterose e híbridos — ESALQ/USP](https://edisciplinas.usp.br/mod/resource/view.php?id=2313667)
+
+- [Understanding the classics — Mackay et al.](https://pmc.ncbi.nlm.nih.gov/articles/PMC7769232/)
+
+- [Melhoramento genético do milho — Aegro](https://aegro.com.br/tags/melhoramento-genetico-do-milho/)
+
+- [Depressão endogâmica e heterose em milho — Bragantia](https://www.redalyc.org/pdf/908/90828777003.pdf)
+
+- [Heterose em cruzamentos entre populações de milho — Scientia Agricola](https://revistas.usp.br/sa/es/article/view/21821)
+
+:::
+
+::: {.callout-note collapse="true"}
+
+## Experimentação agrícola
+
+- [Experimentação agrícola — Embrapa](https://www.infoteca.cnptia.embrapa.br/infoteca/bitstream/doc/1079923/1/DOC17005.pdf)
+
+- [Planejamento de experimentos — USP](https://edisciplinas.usp.br/pluginfile.php/1767485/mod_resource/content/1/aula02_planejamento.pdf)
+
+- [Delineamento em blocos casualizados — InfoEscola](https://www.infoescola.com/estatistica/delineamento-em-blocos-casualizados-dbc/)
+
+:::
+
+::: {.callout-note collapse="true"}
+
+## Produção de milho e safrinha
+
+- [Cultivo do milho: coeficientes técnicos — Embrapa](https://ainfo.cnptia.embrapa.br/digital/bitstream/item/69838/1/Coeficientes-tecnicos.pdf)
+
+- [Sistema Antecipe — Revista Cultivar](https://revistacultivar.com.br/noticias/metodo-de-cultivo-intercalar-possibilita-reducao-de-riscos-durante-a-safrinha)
+
+- [Antecipe no Tocantins e em Goiás — Revista Cultivar](https://revistacultivar.com.br/index.php/noticias/tecnologia-impulsiona-produtividade-do-milho-no-tocantins)
+
+- [Lucratividade da safrinha — Revista Cultivar](https://revistacultivar.com.br/noticias/milho-safrinha-mantem-margem-de-lucro-em-2025-26-diz-aegro)
+
+- No portal do Ministério da Agricultura, busquem **Zoneamento Agrícola de Risco Climático (ZARC)** e **Registro Nacional de Cultivares (RNC)**.
+
+:::
+
+::: {.callout-note collapse="true"}
+
+## Livros para consulta
+
+- **Genética básica.** **Genética na Agropecuária** (Ramalho et al.), **Introdução à Genética** (Griffiths et al.), **Genética: um enfoque conceitual** (Pierce) e **Fundamentos de Genética** (Snustad e Simmons).
+
+- **Genética quantitativa e melhoramento.** **Melhoramento de Plantas** (Borém, Miranda e Fritsche-Neto), **Genética Biométrica no Fitomelhoramento** (Vencovsky e Barriga), **Princípios de Genética Quantitativa** (Cruz), **Principles of Plant Genetics and Breeding** (Acquaah) e **Introduction to Quantitative Genetics** (Falconer e Mackay).
+
+- **Milho.** **Melhoramento e Produção do Milho** (Paterniani e Viégas), **Milho: do plantio à colheita** (Galvão, Borém e Pimentel) e **Quantitative Genetics in Maize Breeding** (Hallauer, Carena e Miranda Filho).
+
+- **Experimentação.** **Experimentação Agrícola** (Banzatto e Kronka) e **Curso de Estatística Experimental** (Pimentel-Gomes).
+
+:::
+
+---
+
+<div class="download-r-footer">
+<a class="download-r-button" id="download-analysis-r" href="./data_exploration.R" download="data_exploration.R"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/></svg>Baixar código em R <span>.R</span></a>
+</div>
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var banner = document.querySelector(".quarto-title-banner");
+    var button = document.getElementById("quarto-code-tools-source");
+    if (!banner || !button) return;
+
+    button.classList.add("banner-code");
+    document.body.appendChild(button);
+
+    function placeButton() {
+        var bottom = banner.getBoundingClientRect().bottom + window.scrollY;
+        button.style.top = (bottom - button.offsetHeight - 6) + "px";
+    }
+
+    placeButton();
+    window.addEventListener("resize", placeButton);
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const main = document.querySelector("main.content");
+  if (!main) return;
+  const dialog = document.createElement("dialog");
+  dialog.className = "result-dialog";
+  dialog.setAttribute("aria-labelledby", "expanded-result-title");
+  dialog.innerHTML = '<header><strong id="expanded-result-title"></strong>' +
+    '<button class="btn btn-outline-secondary btn-sm" type="button">Fechar</button></header>' +
+    '<div class="expanded-content"></div>';
+  document.body.appendChild(dialog);
+  const content = dialog.querySelector(".expanded-content");
+  const closeButton = dialog.querySelector("button");
+  let active = null;
+
+  function resizeWidgets() {
+    requestAnimationFrame(function () {
+      window.dispatchEvent(new Event("resize"));
+      const jq = window.jQuery;
+      if (jq && jq.fn.dataTable) {
+        jq.fn.dataTable.tables({visible: true, api: true}).columns.adjust();
+      }
+    });
+  }
+
+  closeButton.addEventListener("click", function () { dialog.close(); });
+  dialog.addEventListener("close", function () {
+    if (!active) return;
+    active.anchor.after(active.node);
+    active.button.focus();
+    active = null;
+    resizeWidgets();
+  });
+
+  const widgets = Array.from(main.querySelectorAll(".datatables.html-widget, figure"))
+    .filter(function (node) { return node.matches("figure") || !node.closest("figure"); });
+  main.querySelectorAll("table").forEach(function (table) {
+    if (!table.closest(".html-widget, figure, .dataTables_wrapper, .dt-container")) {
+      widgets.push(table);
+    }
+  });
+
+  widgets.forEach(function (node) {
+    const isFigure = node.matches("figure");
+    const label = isFigure ? "Figura" : "Tabela";
+    const caption = node.querySelector("figcaption, caption");
+    const title = caption ? caption.textContent.trim() : label;
+    const anchor = document.createElement("div");
+    anchor.className = "expand-controls";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "expand-icon";
+    button.title = "Ampliar " + label.toLowerCase();
+    button.setAttribute("aria-label", button.title);
+    button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/></svg>';
+    button.setAttribute("aria-haspopup", "dialog");
+    anchor.appendChild(button);
+    node.before(anchor);
+    button.addEventListener("click", function () {
+      if (dialog.open) return;
+      active = {node: node, anchor: anchor, button: button};
+      dialog.querySelector("strong").textContent = title;
+      content.appendChild(node);
+      dialog.showModal();
+      closeButton.focus();
+      resizeWidgets();
+    });
+  });
+});
+</script>
+
+
+<script>
+function initDeh1Zoom() {
+  const map = document.getElementById("deh1-map");
+  if (!map) return;
+  const image = map.querySelector("img");
+  const control = map.querySelector(".map-zoom");
+  if (!image || !control || control.dataset.ready) return;
+  control.dataset.ready = "true";
+
+  const viewport = document.createElement("div");
+  viewport.className = "map-zoom-viewport";
+  viewport.tabIndex = 0;
+  viewport.setAttribute("aria-label", "Mapa de DEH1 com rolagem");
+  const canvas = document.createElement("div");
+  canvas.className = "map-zoom-canvas";
+  const figure = image.closest("figure");
+  const caption = figure && [...figure.children].find(child => child.matches("figcaption"));
+  if (figure) figure.insertBefore(viewport, caption || null);
+  else image.before(viewport);
+  viewport.appendChild(canvas);
+  canvas.appendChild(image);
+  viewport.before(control);
+
+  const slider = control.querySelector("input");
+  const output = control.querySelector("output");
+  function updateZoom() {
+    const width = viewport.clientWidth;
+    const nextWidth = Math.round(width * Number(slider.value) / 100) + "px";
+    if (width > 0 && canvas.style.width !== nextWidth) canvas.style.width = nextWidth;
+    output.textContent = slider.value + "%";
+  }
+
+  slider.addEventListener("input", updateZoom);
+  control.querySelectorAll("button[data-zoom]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      if (button.dataset.zoom === "reset") {
+        slider.value = 100;
+        viewport.scrollTo(0, 0);
+      } else {
+        slider.value = Math.max(50, Math.min(300, Number(slider.value) + Number(button.dataset.zoom)));
+      }
+      updateZoom();
+    });
+  });
+  window.addEventListener("resize", updateZoom);
+  if (window.ResizeObserver) {
+    let lastWidth = viewport.clientWidth;
+    new ResizeObserver(function () {
+      const width = viewport.clientWidth;
+      if (width === lastWidth) return;
+      lastWidth = width;
+      requestAnimationFrame(updateZoom);
+    }).observe(viewport);
+  }
+  updateZoom();
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initDeh1Zoom);
+} else {
+  initDeh1Zoom();
+}
+</script>

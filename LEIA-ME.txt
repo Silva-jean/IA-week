@@ -1,0 +1,31 @@
+TEMPLATE DE RELATÓRIO EM QUARTO
+Criado por João Marcos Amario de Sousa (joao.m.sousa@ufv.br)
+
+O QUE TEM NA PASTA
+  QGSL_LAB.qmd             -> arquivo que você edita (texto, código, figuras)
+  QGSL_LAB.html            -> exemplo já renderizado (abra no navegador)
+  styles.css               -> visual: banner, cores, parágrafos justificados, botões de idioma
+  logo_b.png, idata_b.png  -> logos do banner do título (esquerda e direita)
+  UFV.png                  -> logo fixo no canto inferior direito
+  ref.bib                  -> suas referências (formato BibTeX)
+  apa.csl                  -> estilo das citações (APA)
+
+COMO USAR
+  1. Instale o R e o RStudio (o Quarto já vem com o RStudio).
+  2. Mantenha todos os arquivos na mesma pasta.
+  3. Abra QGSL_LAB.qmd no RStudio e clique em "Render".
+     (ou no terminal: quarto render QGSL_LAB.qmd)
+  4. O HTML sai com tudo embutido (embed-resources), pode mandar só ele.
+
+O QUE PERSONALIZAR
+  - Título, autor, ORCID, e-mail e afiliação: no cabeçalho YAML do .qmd.
+  - Logos: substitua logo_b.png e idata_b.png por imagens com o mesmo nome
+    (ou mude os nomes em styles.css, na linha background-image).
+  - Cor do banner: background-color em styles.css (#590000ff).
+  - Referências: cole os BibTeX no ref.bib (o Google Scholar exporta) e cite
+    no texto com @chave ou [@chave].
+  - Idiomas: cada seção principal (#) em português leva {.pt} no título e
+    cada uma em inglês leva {.en .unnumbered}. Os botões de idioma e de
+    código ficam no banner, abaixo do logo do IDATA. Se não precisar de dois
+    idiomas, apague o bloco lang-switch e tire o {.pt} dos títulos.
+  - Logo da UFV: canto inferior direito; tamanho em styles.css (.logo img).

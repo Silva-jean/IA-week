@@ -1,0 +1,1407 @@
+---
+title: "Exploração e preparação dados genotípicos"
+pagetitle: "Semana de IA"
+subtitle: "Semana de IA | Genomes to Fields 2023"
+author: "Vitor e Jean"
+lang: pt-BR
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-title: "Roteiro"
+    toc-location: left
+    number-sections: true
+    number-depth: 4
+    theme:
+      light: journal
+      dark: darkly
+    embed-resources: true
+    anchor-sections: true
+    smooth-scroll: true
+    code-fold: true
+    code-summary: "código R"
+    code-overflow: wrap
+    code-block-border-left: "#781c1e"
+    code-copy: hover
+    code-tools:
+      source: true
+      toggle: false
+      caption: "Código fonte"
+    fig-format: svg
+    fig-responsive: true
+    fig-cap-location: bottom
+    tbl-cap-location: top
+    page-layout: article
+    css: styles.css
+    title-block-banner: true
+    title-block-banner-color: "white"
+    highlight-style: github
+execute:
+  message: false
+editor_options:
+  chunk_output_type: console
+---
+
+```{=html}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:wght@500;600;700&display=swap">
+<style>
+
+:root {
+  --font-display: "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --font-body:    "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+
+  --accent:        #8a2a2e;
+  --accent-strong: #6d1f23;
+  --accent-bright: #d9777a;
+  --accent-soft:   rgba(138, 42, 46, .08);
+  --accent-ring:   rgba(138, 42, 46, .28);
+  --on-accent:     #ffffff;
+  --slate:         #4f6f8f;
+  --link:          #8a2a2e;
+
+  --ink-soft:      #6b6560;
+  --line:          rgba(60, 40, 35, .10);
+  --line-strong:   rgba(60, 40, 35, .18);
+  --surface:       #ffffff;
+  --surface-2:     #faf8f6;
+  --thead-bg:      #f5f1ee;
+  --row-hover:     rgba(138, 42, 46, .05);
+  --stripe:        rgba(60, 40, 35, .022);
+
+  --code-bg:          #faf8f6;
+  --code-inline-bg:   rgba(79, 111, 143, .10);
+  --code-inline-ink:  #8a2a2e;
+  --code-accent:      #8a2a2e;
+
+  --shadow-sm: 0 1px 2px rgba(60, 40, 35, .05), 0 2px 8px rgba(60, 40, 35, .04);
+  --shadow-md: 0 2px 4px rgba(60, 40, 35, .06), 0 10px 26px rgba(60, 40, 35, .10);
+  --radius:    12px;
+  --radius-sm: 10px;
+  --ease:      cubic-bezier(.2, .7, .2, 1);
+
+ 
+  --pill1-bg: rgba(138, 42, 46, .10);  --pill1-ink: #7a2327; --pill1-bd: rgba(138, 42, 46, .28);
+  --pill2-bg: rgba(79, 111, 143, .12); --pill2-ink: #3e5b78; --pill2-bd: rgba(79, 111, 143, .30);
+  --pill3-bg: rgba(63, 125, 92, .12);  --pill3-ink: #2f6548; --pill3-bd: rgba(63, 125, 92, .30);
+  --pill4-bg: rgba(184, 124, 40, .13); --pill4-ink: #86560f; --pill4-bd: rgba(184, 124, 40, .32);
+
+}
+
+body.quarto-dark,
+body[data-bs-theme="dark"],
+html[data-bs-theme="dark"] {
+  --accent:        #e58a8d;
+  --accent-strong: #f2b0b2;
+  --accent-bright: #f0a3a5;
+  --accent-soft:   rgba(229, 138, 141, .12);
+  --accent-ring:   rgba(229, 138, 141, .36);
+  --on-accent:     #3a0f12;
+  --slate:         #8fb0cb;
+  --link:          #ee9a9d;
+
+  --ink-soft:      #aaa39d;
+  --line:          rgba(255, 255, 255, .09);
+  --line-strong:   rgba(255, 255, 255, .18);
+  --surface:       #2a2726;
+  --surface-2:     #302d2c;
+  --thead-bg:      #35312f;
+  --row-hover:     rgba(229, 138, 141, .09);
+  --stripe:        rgba(255, 255, 255, .025);
+
+  --code-bg:          #1e1c1b;
+  --code-inline-bg:   rgba(255, 255, 255, .09);
+  --code-inline-ink:  #f2b0b2;
+  --code-accent:      #e58a8d;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35), 0 2px 8px rgba(0, 0, 0, .25);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, .4), 0 10px 26px rgba(0, 0, 0, .35);
+
+  --pill1-bg: rgba(229, 138, 141, .15); --pill1-ink: #f2b0b2; --pill1-bd: rgba(229, 138, 141, .34);
+  --pill2-bg: rgba(143, 176, 203, .15); --pill2-ink: #a9c4da; --pill2-bd: rgba(143, 176, 203, .34);
+  --pill3-bg: rgba(120, 190, 150, .15); --pill3-ink: #9bd5b3; --pill3-bd: rgba(120, 190, 150, .34);
+  --pill4-bg: rgba(232, 176, 80, .15);  --pill4-ink: #f0c986; --pill4-bd: rgba(232, 176, 80, .34);
+
+}
+
+
+body { font-family: var(--font-body); }
+main.content {
+  font-family: var(--font-body);
+  font-size: .95rem;
+  line-height: 1.65;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+main.content strong, main.content b { font-weight: 600; }
+main.content li { margin-block: .15rem; }
+main.content h1, main.content h2, main.content h3, main.content h4,
+main.content h5, main.content h6,
+.quarto-title-banner h1, .quarto-title-banner .subtitle,
+#toc-title, .result-dialog header strong {
+  font-family: var(--font-display);
+  letter-spacing: -.005em;
+}
+main.content h2 { font-size: 1.2rem;  font-weight: 600; line-height: 1.3; letter-spacing: -.01em; margin-top: 2rem; }
+main.content h3 { font-size: 1.05rem; font-weight: 600; line-height: 1.35; letter-spacing: -.005em; margin-top: 1.6rem; }
+main.content h4 { font-size: .96rem;  font-weight: 600; line-height: 1.4; margin-top: 1.3rem; }
+
+main.content a:not(.download-r-button):not(.anchorjs-link):not(.btn) {
+  color: var(--link);
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, var(--link) 35%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: .2em;
+  transition: color .18s var(--ease), text-decoration-color .18s var(--ease);
+}
+main.content a:not(.download-r-button):not(.anchorjs-link):not(.btn):hover {
+  color: var(--accent-strong);
+  text-decoration-color: currentColor;
+}
+main.content hr {
+  border: 0; height: 1px; opacity: 1; margin: 2.4rem 0;
+  background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+}
+main.content blockquote {
+  margin-block: 1rem; padding: .6rem 1rem;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+main.content blockquote p:last-child { margin-bottom: 0; }
+::selection { background: var(--accent-ring); }
+
+.quarto-title-banner {
+  border-style: solid;
+  border-width: 0 0 4px 0;
+  border-image: linear-gradient(90deg, #e58a8d, #e8b96a) 1;
+  box-shadow: 0 12px 30px -24px rgba(40, 10, 10, .55);
+}
+.quarto-title-banner h1.title,
+.quarto-title-banner .title {
+  color: #fffdfd !important;
+  font-weight: 700;
+  font-size: clamp(1.7rem, 1.25rem + 1.5vw, 2.3rem);
+  line-height: 1.18;
+  letter-spacing: -.015em;
+  text-wrap: balance;
+}
+.quarto-title-banner .subtitle {
+  color: rgba(255, 255, 255, .86) !important;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 1rem;
+  margin-top: .4rem;
+}
+.quarto-title-banner .quarto-title-meta-heading {
+  font-family: var(--font-body);
+  font-size: .66rem; font-weight: 600;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: rgba(255, 255, 255, .66);
+}
+.quarto-title-banner .quarto-title-meta-contents,
+.quarto-title-banner .quarto-title-meta-contents p,
+.quarto-title-banner .quarto-title-meta-contents a {
+  font-family: var(--font-body);
+  font-size: .9rem; color: #faf8f8 !important;
+  text-indent: 0;
+}
+
+.banner-code {
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: #faf8f8 !important;
+  background: rgba(255, 255, 255, .10);
+  border: 1px solid rgba(250, 248, 248, .55);
+  border-radius: 999px;
+  transition: background-color .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+}
+.banner-code:hover, .banner-code:focus-visible {
+  background: rgba(255, 255, 255, .22);
+  border-color: #faf8f8;
+  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, .55);
+}
+
+#toc-title {
+  font-family: var(--font-body);
+  font-size: .7rem; font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--ink-soft);
+}
+#TOC[role="doc-toc"] ul > li > a,
+#TOC[role="doc-toc"] .nav-link {
+  font-family: var(--font-body);
+  font-size: .82rem; line-height: 1.4;
+  transition: color .18s var(--ease), border-color .18s var(--ease), padding-left .18s var(--ease);
+}
+#TOC[role="doc-toc"] ul > li > a:hover { color: var(--accent); }
+#TOC[role="doc-toc"] ul > li > a.active {
+  color: var(--accent) !important;
+  border-left-color: var(--accent) !important;
+  font-weight: 600;
+}
+
+main.content > section.level1 { margin-block: 2.8rem; }
+main.content section.level1 > h1 {
+  display: flex;
+  align-items: baseline;
+  gap: .6rem;
+  font-size: clamp(1.25rem, 1.12rem + .45vw, 1.55rem);
+  font-weight: 600;
+  line-height: 1.28;
+  letter-spacing: -.012em;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(90deg, var(--accent), var(--accent-bright)) left bottom / 3.5rem 2px no-repeat;
+  padding-bottom: .6rem;
+  margin-bottom: 1.1rem;
+}
+main.content .header-section-number {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: .66em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+  line-height: 1.5;
+  padding: .06rem .55rem;
+  margin: 0 .55rem 0 0;
+  border-radius: 999px;
+  vertical-align: .14em;
+  background: var(--pill2-bg); color: var(--pill2-ink); border: 1px solid var(--pill2-bd);
+}
+main.content section.level1 > h1 .header-section-number {
+  font-size: .64em; margin: 0; vertical-align: baseline;
+  background: var(--pill1-bg); color: var(--pill1-ink); border-color: var(--pill1-bd);
+}
+main.content h3 > .header-section-number { background: var(--pill3-bg); color: var(--pill3-ink); border-color: var(--pill3-bd); }
+main.content h4 > .header-section-number { background: var(--pill4-bg); color: var(--pill4-ink); border-color: var(--pill4-bd); }
+
+main.content .callout .callout-title-container { font-family: var(--font-body); font-size: .96rem; font-weight: 600; }
+main.content .callout .callout-body { font-size: .93rem; }
+main.content .callout p, main.content .callout li { text-indent: 0; }
+main.content .callout {
+  margin-block: .9rem;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border-left-width: .28rem;
+  border-top-color: var(--line);
+  border-right-color: var(--line);
+  border-bottom-color: var(--line);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .25s var(--ease);
+}
+main.content .callout:hover { box-shadow: var(--shadow-md); }
+
+.reading-box {
+  margin-block: .8rem 1.15rem;
+  padding: .85rem 1.1rem;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--slate) 9%, var(--surface)), var(--surface));
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--slate);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.reading-box p { margin: 0; text-align: left; text-indent: 0; }
+.reading-box p + p { margin-top: .55rem; }
+
+/* =====================================================================
+   CÓDIGO
+   ===================================================================== */
+main.content pre, main.content pre code, main.content code, main.content kbd, main.content samp {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+}
+main.content :not(pre) > code:not(.sourceCode) {
+  font-size: .84em; font-weight: 500;
+  padding: .12em .4em;
+  border-radius: 6px;
+  background: var(--code-inline-bg);
+  color: var(--code-inline-ink);
+}
+main.content div.sourceCode {
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--code-accent);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  margin-block: .5rem 1rem;
+}
+main.content div.sourceCode pre {
+  background: transparent; border: 0; margin: 0;
+  padding: .85rem 1rem;
+  border-radius: var(--radius-sm);
+}
+main.content pre code { font-size: .79rem; line-height: 1.6; }
+main.content .cell-output pre {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--slate);
+  border-radius: var(--radius-sm);
+  padding: .75rem 1rem;
+  margin-block: .5rem 1rem;
+}
+main.content .cell-output pre code { font-size: .78rem; background: transparent; color: inherit; }
+
+main.content .cell details > summary,
+main.content details.code-fold > summary {
+  display: inline-flex; align-items: center; gap: .45rem;
+  font-family: var(--font-body);
+  font-size: .76rem; font-weight: 600; line-height: 1.2; letter-spacing: .01em;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: .34rem .85rem;
+  cursor: pointer; user-select: none; list-style: none;
+  transition: color .18s var(--ease), border-color .18s var(--ease),
+              background-color .18s var(--ease), transform .18s var(--ease);
+}
+main.content details > summary::-webkit-details-marker { display: none; }
+main.content .cell details > summary::before,
+main.content details.code-fold > summary::before {
+  content: ""; width: .36rem; height: .36rem;
+  border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg); transition: transform .2s var(--ease);
+}
+main.content details[open] > summary::before { transform: rotate(45deg); }
+main.content .cell details > summary:hover,
+main.content details.code-fold > summary:hover {
+  color: var(--accent); border-color: var(--accent); background: var(--accent-soft);
+  transform: translateY(-1px);
+}
+main.content details[open] > summary { margin-bottom: .5rem; }
+main.content summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.code-copy-button {
+  border-radius: 8px !important;
+  transition: color .18s var(--ease), border-color .18s var(--ease), background-color .18s var(--ease);
+}
+.code-copy-button:hover { color: var(--accent) !important; }
+
+/* =====================================================================
+   TABELAS 
+   ===================================================================== */
+:is(main.content, .result-dialog) table {
+  font-family: var(--font-body);
+  font-size: .82rem;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  --bs-table-striped-bg: var(--stripe);
+}
+:is(main.content, .result-dialog) table th,
+:is(main.content, .result-dialog) table td {
+  padding: .45rem .7rem;
+  border-color: var(--line);
+  vertical-align: middle;
+}
+:is(main.content, .result-dialog) table thead th,
+:is(main.content, .result-dialog) table.dataTable > thead > tr > th {
+  font-family: var(--font-body);
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .015em;
+  color: color-mix(in srgb, var(--bs-body-color) 78%, var(--ink-soft));
+  background: var(--thead-bg);
+  border-bottom: 1px solid var(--line-strong);
+  white-space: nowrap;
+}
+:is(main.content, .result-dialog) table.dataTable > thead > tr > th[class*="sorting"],
+:is(main.content, .result-dialog) table.dataTable > thead > tr > th[class*="dt-orderable"] {
+  padding-right: 1.7rem;
+}
+:is(main.content, .result-dialog) table.dataTable > tbody > tr > td,
+:is(main.content, .result-dialog) table.dataTable > tbody > tr > th {
+  border-top: 1px solid var(--line);
+  border-bottom: 0;
+}
+:is(main.content, .result-dialog) table.dataTable,
+:is(main.content, .result-dialog) table.dataTable > tbody > tr {
+  background-color: transparent;
+}
+:is(main.content, .result-dialog) table tbody tr > * {
+  transition: background-color .15s var(--ease), box-shadow .15s var(--ease);
+}
+:is(main.content, .result-dialog) table tbody tr:hover > * {
+  background-color: var(--row-hover);
+  box-shadow: inset 0 0 0 9999px var(--row-hover);
+  --bs-table-bg-state: var(--row-hover);
+}
+:is(main.content, .result-dialog) table:not(.dataTable) {
+  border: 1px solid var(--line);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+:is(main.content, .result-dialog) table:not(.dataTable) tbody tr:last-child > * { border-bottom: 0; }
+:is(main.content, .result-dialog) table caption {
+  caption-side: top;
+  font-size: .8rem; color: var(--ink-soft);
+  padding: 0 .2rem .5rem;
+}
+figure table:not(.dataTable) { border: 0; box-shadow: none; }
+
+
+.datatables.html-widget {
+  box-sizing: border-box;
+  padding: .7rem .85rem .55rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+figure .datatables.html-widget { padding: 0; border: 0; box-shadow: none; background: transparent; }
+.result-dialog .datatables.html-widget { box-shadow: none; }
+
+.dataTables_wrapper, .dt-container { font-family: var(--font-body); font-size: .8rem; }
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_paginate,
+.dt-container .dt-length, .dt-container .dt-search, .dt-container .dt-info, .dt-container .dt-paging {
+  font-size: .78rem; color: var(--ink-soft);
+}
+.dataTables_wrapper input, .dataTables_wrapper select,
+.dt-container input, .dt-container select {
+  font-family: var(--font-body); font-size: .78rem;
+  color: var(--bs-body-color);
+  background-color: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: .22rem .5rem;
+  transition: border-color .18s var(--ease), box-shadow .18s var(--ease);
+}
+.dataTables_wrapper input:focus, .dataTables_wrapper select:focus,
+.dt-container input:focus, .dt-container select:focus {
+  outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring);
+}
+.datatables thead td input, .datatables thead td select { font-size: .74rem; padding: .18rem .45rem; }
+.datatables .selectize-control .selectize-input {
+  min-height: 0; font-size: .74rem; padding: .2rem .45rem; border-radius: 6px;
+  background: var(--surface-2); color: var(--bs-body-color);
+  border: 1px solid var(--line-strong); box-shadow: none;
+}
+.selectize-dropdown {
+  font-size: .76rem; border-radius: 8px; background: var(--surface); color: var(--bs-body-color);
+  border: 1px solid var(--line-strong); box-shadow: var(--shadow-md);
+}
+.selectize-dropdown .active { background: var(--accent-soft); color: var(--accent-strong); }
+.datatables .noUi-connect { background: var(--accent); }
+
+.dataTables_wrapper .dataTables_paginate .paginate_button,
+.dt-container .dt-paging .dt-paging-button {
+  font-size: .76rem !important;
+  padding: .22rem .6rem !important;
+  margin: 0 .1rem !important;
+  color: var(--ink-soft) !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  transition: color .18s var(--ease), background-color .18s var(--ease), border-color .18s var(--ease);
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover,
+.dt-container .dt-paging .dt-paging-button:hover {
+  color: var(--accent) !important; background: var(--accent-soft) !important;
+  border-color: var(--accent-ring) !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover,
+.dt-container .dt-paging .dt-paging-button.current,
+.dt-container .dt-paging .dt-paging-button.current:hover {
+  color: var(--on-accent) !important; background: var(--accent) !important; border-color: var(--accent) !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+.dt-container .dt-paging .dt-paging-button.disabled { opacity: .4; }
+
+/* =====================================================================
+   FIGURAS
+   ===================================================================== */
+main.content figure {
+  margin-block: 1rem 1.4rem;
+  padding: .8rem .9rem .65rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+main.content figure img, .result-dialog figure img { border-radius: 8px; }
+body.quarto-dark :is(main.content, .result-dialog) figure img,
+body[data-bs-theme="dark"] :is(main.content, .result-dialog) figure img,
+html[data-bs-theme="dark"] :is(main.content, .result-dialog) figure img {
+  background: #fbfcfd; /* garante legibilidade de gráficos com fundo transparente */
+}
+main.content figcaption, main.content .figure-caption {
+  font-size: .8rem; line-height: 1.5; color: var(--ink-soft); margin-top: .55rem;
+}
+
+/* =====================================================================
+   BOTÃO DE EXPANSÃO 
+   ===================================================================== */
+.expand-controls { display: flex; justify-content: flex-end; margin: .2rem 0 .15rem; }
+.expand-controls button, .result-dialog button { font: inherit; cursor: pointer; }
+.expand-controls .expand-icon {
+  display: inline-grid; place-items: center; width: 2.25rem; height: 2.25rem;
+  border-radius: 10px; border: 1px solid var(--line-strong);
+  color: var(--ink-soft); background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition: color .18s var(--ease), border-color .18s var(--ease),
+              transform .18s var(--ease), box-shadow .18s var(--ease), background-color .18s var(--ease);
+}
+.expand-controls .expand-icon:hover,
+.expand-controls .expand-icon:focus-visible {
+  border-color: var(--accent); color: var(--accent); background: var(--accent-soft);
+  outline-offset: 2px; transform: translateY(-1px); box-shadow: var(--shadow-md);
+}
+.expand-controls .expand-icon:focus-visible { outline: 2px solid var(--accent); }
+.expand-controls .expand-icon:active { transform: scale(.94); }
+.expand-icon svg { width: 1.05rem; height: 1.05rem; transition: transform .2s var(--ease); }
+.expand-icon:hover svg { transform: scale(1.12); }
+
+.result-dialog { width: 100%; max-width: none; height: 100%; max-height: none;
+  margin: 0; padding: 0; border: 0; background: var(--bs-body-bg); color: var(--bs-body-color);
+  font-family: var(--font-body); }
+.result-dialog::backdrop { background: rgba(35, 22, 20, .55); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.result-dialog header { position: sticky; top: 0; z-index: 2; display: flex;
+  align-items: center; justify-content: space-between; gap: 1rem; padding: .85rem 1.25rem;
+  background: var(--bs-body-bg); border-bottom: 1px solid var(--line);
+  box-shadow: 0 6px 18px -14px rgba(60, 40, 35, .5); }
+.result-dialog header strong { font-size: .95rem; font-weight: 600; letter-spacing: -.01em; }
+.result-dialog header button {
+  border-radius: 999px; padding: .32rem .95rem; font-size: .78rem; font-weight: 600;
+  color: var(--bs-body-color); background: transparent; border: 1px solid var(--line-strong);
+  transition: color .18s var(--ease), border-color .18s var(--ease),
+              background-color .18s var(--ease), transform .18s var(--ease);
+}
+.result-dialog header button:hover, .result-dialog header button:focus-visible {
+  color: var(--accent); border-color: var(--accent); background: var(--accent-soft); transform: translateY(-1px);
+}
+.result-dialog .expanded-content { overflow: auto; padding: 1rem clamp(1rem, 4vw, 4rem); }
+.result-dialog .expanded-content table:not(.dataTable) { width: 100%; }
+.result-dialog .expanded-content figure { margin-inline: auto; }
+.result-dialog .expanded-content figure img { display: block; margin: auto; width: auto;
+  max-width: 100%; max-height: 78vh; object-fit: contain; }
+
+/* =====================================================================
+   MAPA
+   ===================================================================== */
+.map-zoom { margin: .5rem 0; display: flex; flex-wrap: wrap; align-items: center; gap: .55rem;
+  width: fit-content; max-width: 100%; padding: .4rem .65rem;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-sm); }
+.map-zoom input { width: min(13rem, 52vw); accent-color: var(--accent); cursor: pointer; }
+.map-zoom button {
+  min-width: 2rem; height: 2rem; padding: 0 .75rem;
+  font-family: var(--font-body); font-size: .8rem; font-weight: 600; line-height: 1;
+  color: var(--ink-soft); background: transparent;
+  border: 1px solid var(--line-strong); border-radius: 999px; cursor: pointer;
+  transition: color .18s var(--ease), border-color .18s var(--ease),
+              background-color .18s var(--ease), transform .18s var(--ease);
+}
+.map-zoom button:hover, .map-zoom button:focus-visible {
+  color: var(--accent); border-color: var(--accent); background: var(--accent-soft); transform: translateY(-1px);
+}
+.map-zoom button:active { transform: scale(.95); }
+.map-zoom output {
+  min-width: 2.9rem; text-align: center; font-size: .78rem; font-weight: 600;
+  font-variant-numeric: tabular-nums; color: var(--ink-soft);
+}
+.map-zoom-viewport { display: block; width: 100%; min-width: 0; box-sizing: border-box; overflow: auto; max-height: 72vh; scrollbar-gutter: stable; border: 1px solid var(--line);
+  border-radius: var(--radius-sm); background: var(--surface); scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.map-zoom-viewport:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.map-zoom-canvas { display: block; flex: none; max-width: none !important; }
+.map-zoom-viewport img { display: block; width: 100% !important; max-width: none !important; max-height: none !important; height: auto !important; margin: 0 !important; }
+
+/* =====================================================================
+   BOTÃO DE DOWNLOAD 
+   ===================================================================== */
+.download-r-footer { display: flex; justify-content: center; margin: 1.5rem 0 2rem; }
+.download-r-button {
+  display: inline-flex; align-items: center; gap: .65rem;
+  padding: .75rem 1.2rem; border-radius: var(--radius);
+  font-family: var(--font-body); font-size: .9rem; font-weight: 600; letter-spacing: .005em;
+  color: #fff; text-decoration: none;
+  background: linear-gradient(120deg, #5f1a1e 0%, #8a2a2e 50%, #b4474b 100%);
+  background-size: 200% 100%; background-position: 0 0;
+  border: 1px solid rgba(255, 255, 255, .14);
+  box-shadow: 0 6px 18px -8px rgba(95, 26, 30, .6);
+  transition: background-position .45s var(--ease), transform .2s var(--ease), box-shadow .2s var(--ease);
+}
+.download-r-button:hover, .download-r-button:focus-visible {
+  background-position: 100% 0; color: #fff;
+  transform: translateY(-2px); box-shadow: 0 12px 26px -10px rgba(138, 42, 46, .6);
+}
+.download-r-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.download-r-button:active { transform: translateY(0) scale(.985); }
+.download-r-button svg { width: 1.1rem; height: 1.1rem; transition: transform .25s var(--ease); }
+.download-r-button:hover svg { transform: translateY(2px); }
+.download-r-button span { font-family: var(--font-mono); font-size: .72em; font-weight: 500; color: #fff;
+  background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 6px; padding: .1rem .4rem; }
+
+
+.datatables table.dataTable { margin: 0 !important; }
+.datatables table.dataTable thead td {
+  background: var(--surface-2);
+  padding: .35rem .5rem;
+  border-bottom: 1px solid var(--line);
+}
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { margin-bottom: .65rem; }
+.dataTables_wrapper .dataTables_filter input { min-width: 10rem; }
+.dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_paginate { margin-top: .75rem; padding-top: 0; }
+.dataTables_wrapper .dataTables_scrollBody { border-bottom: 1px solid var(--line); }
+.datatables table.dataTable tbody td:first-child { font-weight: 500; }
+.datatables table.dataTable td, .datatables table.dataTable th { text-indent: 0; }
+
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+</style>
+```
+
+```{r}
+#| echo: false
+#| results: asis
+if (file.exists("UFV.png")) {
+  cat('<div class="logo"><img src="UFV.png" alt="Logo da UFV"></div>')
+}
+```
+
+# Como utilizar este roteiro
+
+::: {.reading-box}
+Neste roteiro vocês vão partir do VCF das linhagens do Genomes to Fields (G2F), selecionar os parentais dos cruzamentos com médias ajustadas e construir duas matrizes de marcadores. Tentem implementar cada etapa em R e usem o código e as tabelas para conferir.
+:::
+
+Localizem o VCF e a chave de linhagens na pasta `G2F/GenomesToFields_G2F_genotypic_data_2014_to_2023`. Separem também `data/blue_data.csv`, produzido no roteiro fenotípico.
+
+# Ler o VCF e localizar os parentais
+
+::: {.callout-note}
+## Leitura de apoio
+
+Cada registro do VCF descreve uma variante. `CHROM` e `POS` localizam a variante, `ID` identifica o marcador, e `REF` e `ALT` indicam os alelos. Depois de `FORMAT` aparecem as amostras. O campo `GT` codifica os alelos de cada amostra. Em um SNP bialélico diploide, `0/0`, `0/1` e `1/1` correspondem a 0, 1 e 2 cópias de `ALT`.
+
+:::
+
+::: {.callout-note collapse="true"}
+## Sugestões de leitura
+
+- [Glossário de genética do NHGRI](https://www.genome.gov/genetics-glossary)
+- [NCBI Bookshelf](https://www.ncbi.nlm.nih.gov/books/NBK470040/)
+- [guia de VCF do Broad Institute](https://gatk.broadinstitute.org/hc/en-us/articles/360035531692-VCF-Variant-Call-Format)
+- [cabeçalho VCF na documentação da Illumina](https://support.illumina.com/content/dam/illumina-support/help/BaseSpace_App_WGS_v6_OLH_15050955_03/Content/Source/Informatics/VCFFileHeadings.htm)
+- [especificação do VCF 4.3](https://samtools.github.io/hts-specs/VCFv4.3.pdf)
+
+:::
+
+```{=html}
+<style>
+.snp-demo {padding:1rem 1.25rem;border:1px solid var(--line-strong);border-left:4px solid var(--accent);border-radius:.65rem;background:var(--surface-2);margin:1.4rem 0}
+.snp-demo fieldset {border:0;padding:0;margin:.75rem 0}
+.snp-demo legend {font-size:1rem;font-weight:600}
+.snp-demo label {display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .65rem}
+.snp-demo input {accent-color:var(--accent)}
+.snp-demo output {display:block}
+.snp-demo mark {background:var(--accent);color:var(--on-accent);padding:.12rem .3rem;border-radius:.2rem}
+.snp-demo .snp-seq {font-family:var(--font-mono);white-space:nowrap}
+</style>
+<div class="snp-demo" id="snp-demo">
+  <strong>Explore um SNP</strong>
+  <p>Neste exemplo fictício, as duas cópias do cromossomo têm um trecho de cinco bases. Na posição central, o VCF registra <code>REF = A</code> e <code>ALT = G</code>.</p>
+  <fieldset>
+    <legend>Escolha o genótipo de uma amostra</legend>
+    <label><input type="radio" name="snp-gt" value="0"> A/A</label>
+    <label><input type="radio" name="snp-gt" value="1" checked> A/G</label>
+    <label><input type="radio" name="snp-gt" value="2"> G/G</label>
+  </fieldset>
+  <output aria-live="polite">
+    Cópia 1 <span class="snp-seq">CT<mark>A</mark>TC</span><br>
+    Cópia 2 <span class="snp-seq">CT<mark>G</mark>TC</span><br>
+    GT no VCF <code>0/1</code> · Dosagem de ALT <b>1</b> · <span class="snp-zygosity">Heterozigoto</span>
+  </output>
+</div>
+<script>
+(() => {
+  const box = document.getElementById("snp-demo");
+  if (!box) return;
+  const bases = box.querySelectorAll("mark");
+  const output = box.querySelector("output");
+  box.addEventListener("change", (event) => {
+    if (event.target.name !== "snp-gt") return;
+    const dose = Number(event.target.value);
+    bases[0].textContent = dose === 2 ? "G" : "A";
+    bases[1].textContent = dose === 0 ? "A" : "G";
+    output.querySelector("code").textContent = ["0/0", "0/1", "1/1"][dose];
+    output.querySelector("b").textContent = dose;
+    output.querySelector(".snp-zygosity").textContent =
+      dose === 1 ? "Heterozigoto" : "Homozigoto";
+  });
+})();
+</script>
+```
+
+::: {.callout-tip}
+## Dica
+
+Leiam primeiro o cabeçalho `#CHROM`. Comparem os IDs das amostras com `DH1` e `DH2` dos híbridos presentes em `blue_data.csv`. Consultem a chave oficial quando houver diferença de nomes. Registrem os casos pendentes para revisão manual.
+:::
+
+::: {.callout-important collapse="true"}
+## Confiram o resultado
+
+Contem cruzamentos distintos pelo campo `Pedigree`. Na rodada de referência, havia 525 cruzamentos com correspondência exata para os dois parentais. A revisão de `PHG80xPHP02` acrescentou um cruzamento, totalizando 526 cruzamentos elegíveis e 529 amostras parentais distintas.
+:::
+
+::: {.reading-box}
+**Pesquise:** SNP, alelo de referência, alelo alternativo, campos FORMAT e GT no VCF, correspondência de IDs com `match()` no R.
+:::
+
+```{r}
+#| eval: false
+
+# Confiram esta etapa após rodar o código completo.
+head(preparacao$hibridos[, c("Pedigree", "DH1", "DH2")])
+head(preparacao$parentais)
+```
+
+# Aplicar o controle de qualidade dos SNPs
+
+::: {.callout-note}
+## Leitura de apoio
+
+O VCF do G2F já contém genótipos inferidos com o *Practical Haplotype Graph* (PHG). O método compara leituras de sequenciamento com haplótipos de referência para inferir a sequência provável em cada trecho do cromossomo. Nesta etapa, usamos as chamadas publicadas e filtramos os marcadores que entram na análise.
+
+:::
+
+::: {.callout-note collapse="true"}
+## Sugestões de leitura
+
+- [Bradbury et al., descrição do PHG](https://doi.org/10.1093/bioinformatics/btac410)
+- [Filtros de MAF e dados ausentes no PLINK](https://www.cog-genomics.org/plink/1.9/filter)
+- [roteiro de controle de qualidade do CHG](https://chg-training.github.io/chg-training-resources/genome_wide_association_studies/quantitative_trait_gwas/qc_genotypes/)
+- [harmonização de dados genômicos](https://currentprotocols.onlinelibrary.wiley.com/doi/10.1002/cpz1.1055)
+
+:::
+
+::: {.callout-tip}
+## Dica
+
+Leiam os registros em lotes. Retenham SNPs bialélicos com GT completo nos parentais selecionados. Calculem a frequência de ALT como a soma das dosagens dividida por duas vezes o número de linhagens. A MAF é a menor entre a frequência de ALT e a de REF. Retenham SNPs com MAF de pelo menos 5%.
+:::
+
+::: {.callout-important collapse="true"}
+## Confiram o resultado
+
+A rodada de referência começou com 437.214 variantes e reteve 227.418 SNPs após os filtros de frequência e completude. Calculem as frequências apenas no painel parental selecionado.
+:::
+
+::: {.reading-box}
+**Pesquise:** SNP bialélico, genótipo ausente no VCF, frequência do alelo menor (MAF), imputação genotípica e `readLines()` em lotes no R.
+:::
+
+```{r}
+#| eval: false
+
+# Confiram esta etapa após rodar o código completo.
+preparacao$contagens
+```
+
+# Reduzir a redundância por desequilíbrio de ligação
+
+::: {.callout-note}
+## Leitura de apoio
+
+O desequilíbrio de ligação (LD) descreve a associação entre alelos em posições distintas. Na poda, usamos o quadrado da correlação entre as dosagens de dois SNPs, $r^2$, para identificar marcadores que carregam informação semelhante.
+
+:::
+
+::: {.callout-note collapse="true"}
+## Sugestões de leitura
+
+- [Poda por LD no PLINK](https://www.cog-genomics.org/plink/1.9/ld)
+- [LD em milho, Remington et al.](https://pmc.ncbi.nlm.nih.gov/articles/PMC58755/)
+- [estudo de LD em milho tropical](https://onlinelibrary.wiley.com/doi/full/10.1111/pbr.13273)
+- [NHGRI](https://www.genome.gov/genetics-glossary/haplotype)
+- [NCI](https://www.cancer.gov/publications/dictionaries/genetics-dictionary/def/haplotype)
+
+:::
+
+::: {.callout-tip}
+## Dica
+
+Trabalhem por cromossomo, com uma janela de 50 SNPs, avanço de 5 SNPs e limiar de $r^2 > 0{,}50$. Nos pares acima do limiar, priorizem o SNP com maior contagem do alelo menor. Em caso de empate, preservem o primeiro na ordem do VCF. Os cromossomos podem ser processados em paralelo.
+:::
+
+::: {.callout-important collapse="true"}
+## Confiram o resultado
+
+Na rodada de referência, a poda reteve 46.630 SNPs. Se compararem com uma execução de referência, usem os IDs dos marcadores para verificar se os conjuntos coincidem.
+:::
+
+::: {.reading-box}
+**Pesquise:** desequilíbrio de ligação (LD), haplótipo, correlação ao quadrado ($r^2$), poda por LD e janela deslizante.
+:::
+
+```{r}
+#| eval: false
+
+# Confiram esta etapa após rodar o código completo.
+preparacao$snps_apos_ld
+```
+
+# Conferir a heterozigosidade das linhagens
+
+::: {.callout-note}
+## Leitura de apoio
+
+Em uma linhagem duplo-haploide, espera-se homozigose. O painel também inclui testadores e parentais de testemunhas. A origem de cada material deve ser conferida na documentação do G2F.
+
+:::
+
+::: {.callout-note collapse="true"}
+## Sugestões de leitura
+
+- [Tecnologia de duplo-haploides em milho](https://pubmed.ncbi.nlm.nih.gov/39414387/)
+- [estatísticas de heterozigosidade no PLINK](https://www.cog-genomics.org/plink/1.9/basic_stats)
+- [checagem de heterozigosidade e dados ausentes no pacote plinkQC](https://search.r-project.org/CRAN/refmans/plinkQC/html/check_het_and_miss.html)
+
+:::
+
+::: {.callout-tip}
+## Dica
+
+Para cada linhagem, dividam o número de SNPs com dosagem 1 pelo número de SNPs com genótipo válido. Identifiquem os cruzamentos que usam pelo menos uma linhagem com genótipo heterozigoto nos SNPs avaliados. A reconstrução deste roteiro retém apenas cruzamentos com dois parentais homozigotos nesses SNPs.
+:::
+
+::: {.callout-important collapse="true"}
+## Confiram o resultado
+
+Três das 529 amostras parentais tinham genótipos heterozigotos nos SNPs retidos. Cada uma aparece em um cruzamento com o testador `LH244`.
+
+::: 
+
+| Linhagem | SNPs heterozigotos | Heterozigosidade | Cruzamento correspondente |
+|---|---:|---:|---|
+| `PHW65_MOG_0271` | 10.206 | 21,89% | `PHW65_MOG_0271/LH244` |
+| `PHN11_PHW65_0312` | 8.422 | 18,06% | `PHN11_PHW65_0312/LH244` |
+| `MO44_PHW65_0035` | 7.876 | 16,89% | `MO44_PHW65_0035/LH244` |
+
+::: {.reading-box}
+**Pesquise:** linhagem duplo-haploide (DH), testador, homozigose, heterozigosidade observada e `rowSums()` no R.
+:::
+
+```{r}
+#| eval: false
+
+# Confiram esta etapa após rodar o código completo.
+head(heterozigosidade, 3L)
+hibridos_revisar
+```
+
+# Montar e conferir as matrizes
+
+::: {.callout-note}
+## Leitura de apoio
+
+Cada linha representa uma linhagem ou um híbrido. As duas matrizes usam os mesmos SNPs nas colunas, na mesma ordem. Para cada SNP, cada parental homozigoto transmite uma cópia do seu alelo. Somem as dosagens dos dois parentais e dividam por dois.
+
+:::
+
+::: {.callout-tip}
+## Dica
+
+Confiram um cruzamento escolhendo o mesmo SNP na matriz de linhagens e na matriz de híbridos.
+
+:::
+
+| Parental 1 | Parental 2 | Dosagem do híbrido |
+|---:|---:|---:|
+| 0 | 0 | 0 |
+| 2 | 0 | 1 |
+| 2 | 2 | 2 |
+
+::: {.callout-important collapse="true"}
+## Confiram o resultado
+
+Esperamos 526 linhagens e 523 híbridos, ambos com 46.630 SNPs. No SNP `S1_201031`, as dosagens observadas de `B37`, `H95` e `B37/H95` foram 2, 0 e 1. Para relacionar a matriz de híbridos às médias ajustadas, usem `Pedigree` como chave.
+:::
+
+| Saída | Conteúdo |
+|---|---|
+| `data/snp.clean` | VCF compactado após o controle de qualidade e a poda por LD, antes do filtro de linhagens por heterozigosidade |
+| `data/marcadores_linhagens.rds` | Matriz de dosagens das linhagens retidas |
+| `data/marcadores_hibridos.rds` | Matriz de dosagens dos híbridos reconstruídos |
+
+::: {.reading-box}
+**Pesquise:** dosagem alélica, transmissão mendeliana, nomes de linhas e colunas de matrizes no R, `saveRDS()` e `readRDS()`.
+:::
+
+```{r}
+#| eval: false
+
+# Confiram esta etapa após rodar o código completo.
+snp = "S1_201031"
+c(
+  B37 = M_linhagens["B37", snp],
+  H95 = M_linhagens["H95", snp],
+  "B37/H95" = M_hibridos["B37/H95", snp]
+)
+```
+
+# Código completo em R
+
+Execute o código na raiz de `IA-week` pelo terminal R do VS Code. O código fica disponível para consulta no HTML.
+
+```{r}
+#| eval: false
+# Execute na raiz de IA-week, depois de gerar data/blue_data.csv.
+# O VCF original do G2F fornece os genótipos parentais.
+# O arquivo snp.clean contém um VCF compactado com gzip.
+
+n_nucleos = 5L  # Ajuste conforme os núcleos e a memória disponíveis.
+
+preparacao = local({
+  entrada = NULL
+  pasta_temp = NULL
+  provis = NULL
+  tryCatch({
+    pasta = file.path("G2F", "GenomesToFields_G2F_genotypic_data_2014_to_2023")
+    arquivo_vcf = file.path(pasta, "inbreds_G2F_2014-2023_437k.vcf")
+    arquivo_blue = file.path("data", "blue_data.csv")
+    arquivo_chave = file.path(pasta, "key_inbreds_G2F_2014-2023.txt")
+    destino = file.path("data", "snp.clean")
+    entradas = c(arquivo_vcf, arquivo_blue, arquivo_chave)
+    if (!all(file.exists(entradas))) {
+      stop("Arquivos ausentes: ", paste(entradas[!file.exists(entradas)], collapse = ", "))
+    }
+    # 1. Uma linha por híbrido basta para encontrar os parentais.
+    # As médias por local continuam disponíveis no CSV original.
+    colunas = c("Pedigree", "DH1", "DH2")
+    medias = read.csv(arquivo_blue, colClasses = setNames(rep("character", 3L), colunas))
+    hibridos = unique(medias[, colunas])
+    stopifnot(nrow(hibridos) > 0L, !anyNA(hibridos$Pedigree),
+              all(nzchar(hibridos$Pedigree)), !anyDuplicated(hibridos$Pedigree))
+    hibridos$DH1 = trimws(hibridos$DH1)
+    hibridos$DH2 = trimws(hibridos$DH2)
+
+    # 2. Leia o cabeçalho para localizar as amostras sem carregar os marcadores.
+    entrada = file(arquivo_vcf, "rt")
+    metadados = character()
+    repeat {
+      linha = readLines(entrada, n = 1L, warn = FALSE)
+      if (!length(linha)) stop("Cabeçalho #CHROM ausente.")
+      if (startsWith(linha, "#CHROM\t")) break
+      metadados = c(metadados, linha)
+    }
+    cabecalho = strsplit(linha, "\t", fixed = TRUE)[[1L]]
+    amostras = cabecalho[-seq_len(9L)]
+    stopifnot(length(amostras) > 0L, !anyDuplicated(amostras))
+
+    # 3. Conte os pares exatos e trate somente a exceção revisada.
+    # A chave oficial sugere nomes alternativos para revisão manual.
+    exatos = (hibridos$DH1 %in% amostras) + (hibridos$DH2 %in% amostras)
+    correcao = hibridos$Pedigree == "PHG80xPHP02" &
+      (is.na(hibridos$DH1) | hibridos$DH1 == "") &
+      (is.na(hibridos$DH2) | hibridos$DH2 == "")
+    if (any(correcao) && all(c("PHG80", "PHP02") %in% amostras)) {
+      hibridos$DH1[correcao] = "PHG80"
+      hibridos$DH2[correcao] = "PHP02"
+    }
+    hibridos$Parentais_no_VCF = (hibridos$DH1 %in% amostras) +
+      (hibridos$DH2 %in% amostras)
+    pendentes = hibridos[hibridos$Parentais_no_VCF < 2L, , drop = FALSE]
+    elegiveis = hibridos[hibridos$Parentais_no_VCF == 2L, , drop = FALSE]
+    ids = sort(unique(c(elegiveis$DH1, elegiveis$DH2)))
+    if (!length(ids)) stop("Nenhum híbrido tem os dois parentais no VCF.")
+
+    chave = read.delim(arquivo_chave, check.names = FALSE, colClasses = "character",
+                       na.strings = c("", "NA"))
+    nomes = trimws(chave[["Cultivar"]])
+    alternativos = trimws(chave[["Alternative name"]])
+    stopifnot(length(nomes) == nrow(chave), length(alternativos) == nrow(chave))
+    faltantes = unique(c(pendentes$DH1, pendentes$DH2))
+    faltantes = sort(setdiff(faltantes[!is.na(faltantes) & nzchar(faltantes)], amostras))
+    candidatos_vcf = character(length(faltantes))
+    for (i in seq_along(faltantes)) {
+      id = faltantes[i]
+      candidatos = c(nomes[which(alternativos == id)], alternativos[which(nomes == id)])
+      candidatos_vcf[i] = paste(intersect(candidatos, amostras), collapse = " | ")
+    }
+    revisao = data.frame(ID = faltantes, Candidatos_no_VCF = candidatos_vcf)
+    print(data.frame(
+      Parentais_no_VCF = 0:2,
+      Hibridos_match_exato = tabulate(exatos + 1L, nbins = 3L),
+      Hibridos_apos_revisao = tabulate(hibridos$Parentais_no_VCF + 1L, nbins = 3L)
+    ), row.names = FALSE)
+    print(pendentes, row.names = FALSE)
+    print(revisao, row.names = FALSE)
+    message("Amostras parentais distintas: ", length(ids))
+
+    # 4. Faça o QC em lotes. Conte a frequência no painel de parentais.
+    # MAF >= 0,05 elimina marcadores raros. Exigir GT completo evita imputação
+    # adicional nesta análise. Os genótipos da publicação já passaram pelo PHG.
+    # Grave temporários por cromossomo para manter a memória sob controle.
+    pasta_temp = tempfile("g2f_qc_")
+    stopifnot(dir.create(pasta_temp))
+    col_amostras = 9L + match(ids, amostras)
+    num_amostras = length(ids)
+    cromossomos = as.character(1:10)
+    arquivos = file.path(pasta_temp, paste0(cromossomos, ".tsv"))
+    binarios = file.path(pasta_temp, paste0(cromossomos, ".bin"))
+    codigos = c("0/0", "0/1", "1/0", "1/1")
+    dosagens = c(0L, 1L, 1L, 2L)
+    bases = c("A", "C", "G", "T")
+    contagens = c(Variantes = 0L, SNPs_bialelicos = 0L, QC = 0L)
+    contagem_chr = integer(length(cromossomos))
+    repeat {
+      linhas = readLines(entrada, n = 500L, warn = FALSE)
+      if (!length(linhas)) break
+      contagens["Variantes"] = contagens["Variantes"] + length(linhas)
+      registros = strsplit(linhas, "\t", fixed = TRUE)
+      saida_lote = character(length(registros))
+      chr_lote = integer(length(registros))
+      dose_lote = vector("list", length(registros))
+
+      for (i in seq_along(registros)) {
+        registro = registros[[i]]
+        if (length(registro) != length(cabecalho)) stop("Registro VCF incompleto.")
+        if (!(registro[4L] %in% bases && registro[5L] %in% bases &&
+              registro[4L] != registro[5L])) next
+        contagens["SNPs_bialelicos"] = contagens["SNPs_bialelicos"] + 1L
+        formatos = strsplit(registro[9L], ":", fixed = TRUE)[[1L]]
+        pos_gt = match("GT", formatos)
+        if (is.na(pos_gt)) next
+
+        chamadas = registro[col_amostras]
+        gt = if (pos_gt == 1L) {
+          sub(":.*$", "", chamadas)
+        } else {
+          vapply(strsplit(chamadas, ":", fixed = TRUE), function(x) {
+            x[pos_gt]
+          }, character(1L))
+        }
+        dose = dosagens[match(chartr("|", "/", gt), codigos)]
+        if (anyNA(dose)) next
+        freq_alt = sum(dose) / (2 * num_amostras)
+        if (min(freq_alt, 1 - freq_alt) < 0.05) next
+
+        chr = match(registro[1L], cromossomos)
+        if (is.na(chr)) stop("Cromossomo inesperado: ", registro[1L])
+        chr_lote[i] = chr
+        dose_lote[[i]] = as.raw(dose)
+        saida_lote[i] = paste(registro[c(seq_len(9L), col_amostras)], collapse = "\t")
+      }
+      for (grupo in split(which(chr_lote > 0L), chr_lote[chr_lote > 0L])) {
+        chr = chr_lote[grupo[1L]]
+        cat(saida_lote[grupo], file = arquivos[chr], sep = "\n", append = TRUE)
+        con = file(binarios[chr], "ab")
+        tryCatch(writeBin(do.call(c, dose_lote[grupo]), con), finally = close(con))
+        contagem_chr[chr] = contagem_chr[chr] + length(grupo)
+      }
+    }
+    contagens["QC"] = sum(contagem_chr)
+    print(contagens)
+    if (!contagens["QC"]) stop("Nenhum SNP passou no QC.")
+
+    # 5. Reduza redundância por LD dentro de cada cromossomo.
+    # Janela de 50 SNPs, avanço de 5 SNPs e limiar r² de 0,50.
+    # Em um par acima do limiar, priorize o maior número de alelos menores.
+    # Em empate, fica o SNP que aparece primeiro no VCF.
+    # Cada processo recebe um cromossomo e executa os mesmos loops.
+   
+    podar_cromossomo = function(tarefa) {
+      n = tarefa$n
+      if (!n) return(logical())
+      num_amostras = tarefa$num_amostras
+      bruto = readBin(tarefa$arquivo, "raw", n = num_amostras * n)
+      stopifnot(length(bruto) == num_amostras * n)
+      dose = matrix(as.integer(bruto), nrow = num_amostras)
+      rm(bruto)
+      totais = colSums(dose)
+      mac = pmin(totais, 2 * num_amostras - totais)
+      ativos = rep(TRUE, n)
+
+      for (inicio in seq.int(1L, n, by = 5L)) {
+        fim = min(n, inicio + 49L)
+        janela = seq.int(inicio, fim)
+        alvos = janela[ativos[janela]]
+        if (length(alvos)) {
+          x = dose[, alvos, drop = FALSE]
+          x = sweep(x, 2L, colMeans(x), "-")
+          norma = sqrt(colSums(x^2))
+          ativos[alvos[norma == 0]] = FALSE
+          alvos = alvos[norma > 0]
+          if (length(alvos) > 1L) {
+            x = sweep(x[, norma > 0, drop = FALSE], 2L, norma[norma > 0], "/")
+            r2 = crossprod(x)^2
+            repeat {
+              alterou = FALSE
+              for (i in seq_len(length(alvos) - 1L)) {
+                if (!ativos[alvos[i]]) next
+                direita = seq.int(i + 1L, length(alvos))
+                conflito = direita[ativos[alvos[direita]] &
+                                    r2[i, direita] > 0.5 * (1 + 1e-12)]
+                if (!length(conflito)) next
+                j = conflito[1L]
+                remover = if (mac[alvos[i]] < mac[alvos[j]]) i else j
+                ativos[alvos[remover]] = FALSE
+                alterou = TRUE
+              }
+              if (!alterou) break
+            }
+          }
+        }
+        if (fim == n) break
+      }
+      ativos
+    }
+    # Evite enviar aos processos os objetos usados na leitura do VCF.
+    environment(podar_cromossomo) = baseenv()
+    tarefas = vector("list", length(cromossomos))
+    for (chr in seq_along(cromossomos)) {
+      tarefas[[chr]] = list(n = contagem_chr[chr], arquivo = binarios[chr],
+                            num_amostras = num_amostras)
+    }
+    stopifnot(length(n_nucleos) == 1L, is.finite(n_nucleos),
+              n_nucleos >= 1, n_nucleos == floor(n_nucleos))
+    processos = min(n_nucleos, sum(contagem_chr > 0L))
+    message("Poda por LD com ", processos, " processo(s).")
+    if (processos == 1L) {
+      manter = lapply(tarefas, podar_cromossomo)
+    } else {
+      cluster = parallel::makePSOCKcluster(processos)
+      manter = tryCatch(
+        parallel::parLapplyLB(cluster, tarefas, podar_cromossomo),
+        finally = parallel::stopCluster(cluster)
+      )
+    }
+    apos_ld = vapply(manter, sum, integer(1L))
+    print(data.frame(Cromossomo = cromossomos, Apos_QC = contagem_chr,
+                     Apos_LD = apos_ld), row.names = FALSE)
+    message("SNPs após LD: ", sum(apos_ld))
+    if (!sum(apos_ld)) stop("Nenhum SNP passou na poda por LD.")
+
+    # 6. Monte a matriz de linhagens com os SNPs retidos pela poda.
+    # Cada linha é uma linhagem. As colunas guardam a dosagem do alelo ALT.
+    # Aproveite as dosagens já lidas do VCF na etapa de controle de qualidade.
+    n_snps = sum(apos_ld)
+    matriz = matrix(NA_integer_, nrow = num_amostras, ncol = n_snps)
+    marcadores = character(n_snps)
+    deslocamento = 0L
+
+    # Grave o VCF compactado e reúna os IDs na mesma ordem das dosagens.
+    provis = tempfile(".g2f_", tmpdir = dirname(destino), fileext = ".vcf.gz")
+    saida = gzfile(provis, "wt")
+    tryCatch({
+      writeLines(c(metadados, paste(c(cabecalho[seq_len(9L)], ids), collapse = "\t")), saida)
+      for (i in which(apos_ld > 0L)) {
+        bruto = readBin(binarios[i], "raw", n = num_amostras * contagem_chr[i])
+        stopifnot(length(bruto) == num_amostras * contagem_chr[i])
+        dose = matrix(as.integer(bruto), nrow = num_amostras)
+        colunas_chr = deslocamento + seq_len(apos_ld[i])
+        matriz[, colunas_chr] = dose[, manter[[i]], drop = FALSE]
+        rm(bruto, dose)
+
+        vcs = file(arquivos[i], "rt")
+        tryCatch({
+          inicio = 0L
+          repeat {
+            lote = readLines(vcs, n = 1000L, warn = FALSE)
+            if (!length(lote)) break
+            selecionar = manter[[i]][inicio + seq_along(lote)]
+            retidos = lote[selecionar]
+            writeLines(retidos, saida)
+            if (length(retidos)) {
+              # O ID do SNP é o terceiro campo de cada registro VCF.
+              indices = deslocamento + seq_along(retidos)
+              marcadores[indices] = sub("^[^\t]*\t[^\t]*\t([^\t]*).*", "\\1", retidos)
+              deslocamento = deslocamento + length(retidos)
+            }
+            inicio = inicio + length(lote)
+          }
+          stopifnot(inicio == contagem_chr[i])
+        }, finally = close(vcs))
+      }
+    }, finally = close(saida))
+    stopifnot(deslocamento == n_snps, all(nzchar(marcadores) & marcadores != "."),
+              !anyDuplicated(marcadores))
+    dimnames(matriz) = list(ids, marcadores)
+    if (!file.rename(provis, destino)) {
+      stop("Não foi possível gravar o VCF final em: ", destino)
+    }
+    message("VCF salvo em: ", destino)
+
+    invisible(list(hibridos = elegiveis, pendentes = pendentes, aliases = revisao,
+                   parentais = ids, contagens = contagens, snps_apos_ld = sum(apos_ld),
+                   arquivo = destino, M_linhagens = matriz))
+  }, finally = {
+    if (!is.null(entrada)) close(entrada)
+    if (!is.null(provis)) unlink(provis)
+    if (!is.null(pasta_temp)) unlink(pasta_temp, recursive = TRUE)
+  })
+})
+
+# 7. Calcule a heterozigosidade nos SNPs retidos pela poda por LD.
+# A dosagem 1 indica uma cópia de cada alelo, ou seja, um heterozigoto.
+M_linhagens = preparacao$M_linhagens
+preparacao$M_linhagens = NULL
+heterozigotos = rowSums(M_linhagens == 1L)
+n_snps = ncol(M_linhagens)
+heterozigosidade = data.frame(
+  Linhagem = rownames(M_linhagens),
+  SNPs_validos = n_snps,
+  SNPs_heterozigotos = heterozigotos,
+  Heterozigosidade_pct = 100 * heterozigotos / n_snps,
+  row.names = NULL
+)
+heterozigosidade = heterozigosidade[
+  order(heterozigosidade$Heterozigosidade_pct, decreasing = TRUE), ,
+  drop = FALSE
+]
+linhagens_revisar = heterozigosidade$Linhagem[heterozigosidade$SNPs_heterozigotos > 0L]
+print(head(heterozigosidade, 20L), row.names = FALSE)
+
+# 8. Retenha nas matrizes os parentais sem heterozigotos e seus cruzamentos.
+# Um parental heterozigoto pode transmitir qualquer um dos seus dois alelos.
+# O arquivo snp.clean registra os SNPs após a poda por LD, antes desta etapa.
+cruzamentos = preparacao$hibridos
+excluir = cruzamentos$DH1 %in% linhagens_revisar |
+  cruzamentos$DH2 %in% linhagens_revisar
+hibridos_revisar = cruzamentos[excluir, c("Pedigree", "DH1", "DH2"), drop = FALSE]
+print(hibridos_revisar, row.names = FALSE)
+message("Linhagens excluídas: ", length(linhagens_revisar))
+message("Híbridos excluídos: ", nrow(hibridos_revisar))
+
+cruzamentos = cruzamentos[!excluir, , drop = FALSE]
+M_linhagens = M_linhagens[
+  !rownames(M_linhagens) %in% linhagens_revisar, , drop = FALSE
+]
+if (!nrow(cruzamentos)) stop("Nenhum híbrido tem dois parentais homozigotos.")
+
+# 9. Reconstrua a dosagem dos híbridos a partir dos dois parentais.
+# Cada parental homozigoto transmite uma cópia do seu alelo.
+# Por exemplo, um cruzamento 0/0 × 1/1 produz dosagem 1 no híbrido.
+pai_1 = match(cruzamentos$DH1, rownames(M_linhagens))
+pai_2 = match(cruzamentos$DH2, rownames(M_linhagens))
+stopifnot(!anyNA(pai_1), !anyNA(pai_2))
+
+M_hibridos = matrix(
+  NA_integer_, nrow = nrow(cruzamentos), ncol = n_snps,
+  dimnames = list(cruzamentos$Pedigree, colnames(M_linhagens))
+)
+for (j in seq_len(n_snps)) {
+  M_hibridos[, j] = (M_linhagens[pai_1, j] + M_linhagens[pai_2, j]) %/% 2L
+}
+
+# Use Pedigree para relacionar os híbridos da matriz às médias ajustadas.
+print(data.frame(
+  Matriz = c("Linhagens", "Híbridos"),
+  Genotipos = c(nrow(M_linhagens), nrow(M_hibridos)),
+  SNPs = c(ncol(M_linhagens), ncol(M_hibridos))
+), row.names = FALSE)
+
+# Salve as matrizes para a próxima etapa da análise.
+saveRDS(M_linhagens, file.path("data", "marcadores_linhagens.rds"))
+saveRDS(M_hibridos, file.path("data", "marcadores_hibridos.rds"))
+```
+
+<div class="download-r-footer">
+<a class="download-r-button" href="data:text/plain;charset=utf-8;base64,IyBFeGVjdXRlIG5hIHJhaXogZGUgSUEtd2VlaywgZGVwb2lzIGRlIGdlcmFyIGRhdGEvYmx1ZV9kYXRhLmNzdi4KIyBPIFZDRiBvcmlnaW5hbCBkbyBHMkYgZm9ybmVjZSBvcyBnZW7Ds3RpcG9zIHBhcmVudGFpcy4KIyBPIGFycXVpdm8gc25wLmNsZWFuIGNvbnTDqW0gdW0gVkNGIGNvbXBhY3RhZG8gY29tIGd6aXAuCgpuX251Y2xlb3MgPSA1TCAgIyBBanVzdGUgY29uZm9ybWUgb3MgbsO6Y2xlb3MgZSBhIG1lbcOzcmlhIGRpc3BvbsOtdmVpcy4KCnByZXBhcmFjYW8gPSBsb2NhbCh7CiAgZW50cmFkYSA9IE5VTEwKICBwYXN0YV90ZW1wID0gTlVMTAogIHByb3ZpcyA9IE5VTEwKICB0cnlDYXRjaCh7CiAgICBwYXN0YSA9IGZpbGUucGF0aCgiRzJGIiwgIkdlbm9tZXNUb0ZpZWxkc19HMkZfZ2Vub3R5cGljX2RhdGFfMjAxNF90b18yMDIzIikKICAgIGFycXVpdm9fdmNmID0gZmlsZS5wYXRoKHBhc3RhLCAiaW5icmVkc19HMkZfMjAxNC0yMDIzXzQzN2sudmNmIikKICAgIGFycXVpdm9fYmx1ZSA9IGZpbGUucGF0aCgiZGF0YSIsICJibHVlX2RhdGEuY3N2IikKICAgIGFycXVpdm9fY2hhdmUgPSBmaWxlLnBhdGgocGFzdGEsICJrZXlfaW5icmVkc19HMkZfMjAxNC0yMDIzLnR4dCIpCiAgICBkZXN0aW5vID0gZmlsZS5wYXRoKCJkYXRhIiwgInNucC5jbGVhbiIpCiAgICBlbnRyYWRhcyA9IGMoYXJxdWl2b192Y2YsIGFycXVpdm9fYmx1ZSwgYXJxdWl2b19jaGF2ZSkKICAgIGlmICghYWxsKGZpbGUuZXhpc3RzKGVudHJhZGFzKSkpIHsKICAgICAgc3RvcCgiQXJxdWl2b3MgYXVzZW50ZXM6ICIsIHBhc3RlKGVudHJhZGFzWyFmaWxlLmV4aXN0cyhlbnRyYWRhcyldLCBjb2xsYXBzZSA9ICIsICIpKQogICAgfQogICAgIyAxLiBVbWEgbGluaGEgcG9yIGjDrWJyaWRvIGJhc3RhIHBhcmEgZW5jb250cmFyIG9zIHBhcmVudGFpcy4KICAgICMgQXMgbcOpZGlhcyBwb3IgbG9jYWwgY29udGludWFtIGRpc3BvbsOtdmVpcyBubyBDU1Ygb3JpZ2luYWwuCiAgICBjb2x1bmFzID0gYygiUGVkaWdyZWUiLCAiREgxIiwgIkRIMiIpCiAgICBtZWRpYXMgPSByZWFkLmNzdihhcnF1aXZvX2JsdWUsIGNvbENsYXNzZXMgPSBzZXROYW1lcyhyZXAoImNoYXJhY3RlciIsIDNMKSwgY29sdW5hcykpCiAgICBoaWJyaWRvcyA9IHVuaXF1ZShtZWRpYXNbLCBjb2x1bmFzXSkKICAgIHN0b3BpZm5vdChucm93KGhpYnJpZG9zKSA+IDBMLCAhYW55TkEoaGlicmlkb3MkUGVkaWdyZWUpLAogICAgICAgICAgICAgIGFsbChuemNoYXIoaGlicmlkb3MkUGVkaWdyZWUpKSwgIWFueUR1cGxpY2F0ZWQoaGlicmlkb3MkUGVkaWdyZWUpKQogICAgaGlicmlkb3MkREgxID0gdHJpbXdzKGhpYnJpZG9zJERIMSkKICAgIGhpYnJpZG9zJERIMiA9IHRyaW13cyhoaWJyaWRvcyRESDIpCgogICAgIyAyLiBMZWlhIG8gY2FiZcOnYWxobyBwYXJhIGxvY2FsaXphciBhcyBhbW9zdHJhcyBzZW0gY2FycmVnYXIgb3MgbWFyY2Fkb3Jlcy4KICAgIGVudHJhZGEgPSBmaWxlKGFycXVpdm9fdmNmLCAicnQiKQogICAgbWV0YWRhZG9zID0gY2hhcmFjdGVyKCkKICAgIHJlcGVhdCB7CiAgICAgIGxpbmhhID0gcmVhZExpbmVzKGVudHJhZGEsIG4gPSAxTCwgd2FybiA9IEZBTFNFKQogICAgICBpZiAoIWxlbmd0aChsaW5oYSkpIHN0b3AoIkNhYmXDp2FsaG8gI0NIUk9NIGF1c2VudGUuIikKICAgICAgaWYgKHN0YXJ0c1dpdGgobGluaGEsICIjQ0hST01cdCIpKSBicmVhawogICAgICBtZXRhZGFkb3MgPSBjKG1ldGFkYWRvcywgbGluaGEpCiAgICB9CiAgICBjYWJlY2FsaG8gPSBzdHJzcGxpdChsaW5oYSwgIlx0IiwgZml4ZWQgPSBUUlVFKVtbMUxdXQogICAgYW1vc3RyYXMgPSBjYWJlY2FsaG9bLXNlcV9sZW4oOUwpXQogICAgc3RvcGlmbm90KGxlbmd0aChhbW9zdHJhcykgPiAwTCwgIWFueUR1cGxpY2F0ZWQoYW1vc3RyYXMpKQoKICAgICMgMy4gQ29udGUgb3MgcGFyZXMgZXhhdG9zIGUgdHJhdGUgc29tZW50ZSBhIGV4Y2XDp8OjbyByZXZpc2FkYS4KICAgICMgQSBjaGF2ZSBvZmljaWFsIHN1Z2VyZSBub21lcyBhbHRlcm5hdGl2b3MgcGFyYSByZXZpc8OjbyBtYW51YWwuCiAgICBleGF0b3MgPSAoaGlicmlkb3MkREgxICVpbiUgYW1vc3RyYXMpICsgKGhpYnJpZG9zJERIMiAlaW4lIGFtb3N0cmFzKQogICAgY29ycmVjYW8gPSBoaWJyaWRvcyRQZWRpZ3JlZSA9PSAiUEhHODB4UEhQMDIiICYKICAgICAgKGlzLm5hKGhpYnJpZG9zJERIMSkgfCBoaWJyaWRvcyRESDEgPT0gIiIpICYKICAgICAgKGlzLm5hKGhpYnJpZG9zJERIMikgfCBoaWJyaWRvcyRESDIgPT0gIiIpCiAgICBpZiAoYW55KGNvcnJlY2FvKSAmJiBhbGwoYygiUEhHODAiLCAiUEhQMDIiKSAlaW4lIGFtb3N0cmFzKSkgewogICAgICBoaWJyaWRvcyRESDFbY29ycmVjYW9dID0gIlBIRzgwIgogICAgICBoaWJyaWRvcyRESDJbY29ycmVjYW9dID0gIlBIUDAyIgogICAgfQogICAgaGlicmlkb3MkUGFyZW50YWlzX25vX1ZDRiA9IChoaWJyaWRvcyRESDEgJWluJSBhbW9zdHJhcykgKwogICAgICAoaGlicmlkb3MkREgyICVpbiUgYW1vc3RyYXMpCiAgICBwZW5kZW50ZXMgPSBoaWJyaWRvc1toaWJyaWRvcyRQYXJlbnRhaXNfbm9fVkNGIDwgMkwsICwgZHJvcCA9IEZBTFNFXQogICAgZWxlZ2l2ZWlzID0gaGlicmlkb3NbaGlicmlkb3MkUGFyZW50YWlzX25vX1ZDRiA9PSAyTCwgLCBkcm9wID0gRkFMU0VdCiAgICBpZHMgPSBzb3J0KHVuaXF1ZShjKGVsZWdpdmVpcyRESDEsIGVsZWdpdmVpcyRESDIpKSkKICAgIGlmICghbGVuZ3RoKGlkcykpIHN0b3AoIk5lbmh1bSBow61icmlkbyB0ZW0gb3MgZG9pcyBwYXJlbnRhaXMgbm8gVkNGLiIpCgogICAgY2hhdmUgPSByZWFkLmRlbGltKGFycXVpdm9fY2hhdmUsIGNoZWNrLm5hbWVzID0gRkFMU0UsIGNvbENsYXNzZXMgPSAiY2hhcmFjdGVyIiwKICAgICAgICAgICAgICAgICAgICAgICBuYS5zdHJpbmdzID0gYygiIiwgIk5BIikpCiAgICBub21lcyA9IHRyaW13cyhjaGF2ZVtbIkN1bHRpdmFyIl1dKQogICAgYWx0ZXJuYXRpdm9zID0gdHJpbXdzKGNoYXZlW1siQWx0ZXJuYXRpdmUgbmFtZSJdXSkKICAgIHN0b3BpZm5vdChsZW5ndGgobm9tZXMpID09IG5yb3coY2hhdmUpLCBsZW5ndGgoYWx0ZXJuYXRpdm9zKSA9PSBucm93KGNoYXZlKSkKICAgIGZhbHRhbnRlcyA9IHVuaXF1ZShjKHBlbmRlbnRlcyRESDEsIHBlbmRlbnRlcyRESDIpKQogICAgZmFsdGFudGVzID0gc29ydChzZXRkaWZmKGZhbHRhbnRlc1shaXMubmEoZmFsdGFudGVzKSAmIG56Y2hhcihmYWx0YW50ZXMpXSwgYW1vc3RyYXMpKQogICAgY2FuZGlkYXRvc192Y2YgPSBjaGFyYWN0ZXIobGVuZ3RoKGZhbHRhbnRlcykpCiAgICBmb3IgKGkgaW4gc2VxX2Fsb25nKGZhbHRhbnRlcykpIHsKICAgICAgaWQgPSBmYWx0YW50ZXNbaV0KICAgICAgY2FuZGlkYXRvcyA9IGMobm9tZXNbd2hpY2goYWx0ZXJuYXRpdm9zID09IGlkKV0sIGFsdGVybmF0aXZvc1t3aGljaChub21lcyA9PSBpZCldKQogICAgICBjYW5kaWRhdG9zX3ZjZltpXSA9IHBhc3RlKGludGVyc2VjdChjYW5kaWRhdG9zLCBhbW9zdHJhcyksIGNvbGxhcHNlID0gIiB8ICIpCiAgICB9CiAgICByZXZpc2FvID0gZGF0YS5mcmFtZShJRCA9IGZhbHRhbnRlcywgQ2FuZGlkYXRvc19ub19WQ0YgPSBjYW5kaWRhdG9zX3ZjZikKICAgIHByaW50KGRhdGEuZnJhbWUoCiAgICAgIFBhcmVudGFpc19ub19WQ0YgPSAwOjIsCiAgICAgIEhpYnJpZG9zX21hdGNoX2V4YXRvID0gdGFidWxhdGUoZXhhdG9zICsgMUwsIG5iaW5zID0gM0wpLAogICAgICBIaWJyaWRvc19hcG9zX3JldmlzYW8gPSB0YWJ1bGF0ZShoaWJyaWRvcyRQYXJlbnRhaXNfbm9fVkNGICsgMUwsIG5iaW5zID0gM0wpCiAgICApLCByb3cubmFtZXMgPSBGQUxTRSkKICAgIHByaW50KHBlbmRlbnRlcywgcm93Lm5hbWVzID0gRkFMU0UpCiAgICBwcmludChyZXZpc2FvLCByb3cubmFtZXMgPSBGQUxTRSkKICAgIG1lc3NhZ2UoIkFtb3N0cmFzIHBhcmVudGFpcyBkaXN0aW50YXM6ICIsIGxlbmd0aChpZHMpKQoKICAgICMgNC4gRmHDp2EgbyBRQyBlbSBsb3Rlcy4gQ29udGUgYSBmcmVxdcOqbmNpYSBubyBwYWluZWwgZGUgcGFyZW50YWlzLgogICAgIyBNQUYgPj0gMCwwNSBlbGltaW5hIG1hcmNhZG9yZXMgcmFyb3MuIEV4aWdpciBHVCBjb21wbGV0byBldml0YSBpbXB1dGHDp8OjbwogICAgIyBhZGljaW9uYWwgbmVzdGEgYW7DoWxpc2UuIE9zIGdlbsOzdGlwb3MgZGEgcHVibGljYcOnw6NvIGrDoSBwYXNzYXJhbSBwZWxvIFBIRy4KICAgICMgR3JhdmUgdGVtcG9yw6FyaW9zIHBvciBjcm9tb3Nzb21vIHBhcmEgbWFudGVyIGEgbWVtw7NyaWEgc29iIGNvbnRyb2xlLgogICAgcGFzdGFfdGVtcCA9IHRlbXBmaWxlKCJnMmZfcWNfIikKICAgIHN0b3BpZm5vdChkaXIuY3JlYXRlKHBhc3RhX3RlbXApKQogICAgY29sX2Ftb3N0cmFzID0gOUwgKyBtYXRjaChpZHMsIGFtb3N0cmFzKQogICAgbnVtX2Ftb3N0cmFzID0gbGVuZ3RoKGlkcykKICAgIGNyb21vc3NvbW9zID0gYXMuY2hhcmFjdGVyKDE6MTApCiAgICBhcnF1aXZvcyA9IGZpbGUucGF0aChwYXN0YV90ZW1wLCBwYXN0ZTAoY3JvbW9zc29tb3MsICIudHN2IikpCiAgICBiaW5hcmlvcyA9IGZpbGUucGF0aChwYXN0YV90ZW1wLCBwYXN0ZTAoY3JvbW9zc29tb3MsICIuYmluIikpCiAgICBjb2RpZ29zID0gYygiMC8wIiwgIjAvMSIsICIxLzAiLCAiMS8xIikKICAgIGRvc2FnZW5zID0gYygwTCwgMUwsIDFMLCAyTCkKICAgIGJhc2VzID0gYygiQSIsICJDIiwgIkciLCAiVCIpCiAgICBjb250YWdlbnMgPSBjKFZhcmlhbnRlcyA9IDBMLCBTTlBzX2JpYWxlbGljb3MgPSAwTCwgUUMgPSAwTCkKICAgIGNvbnRhZ2VtX2NociA9IGludGVnZXIobGVuZ3RoKGNyb21vc3NvbW9zKSkKICAgIHJlcGVhdCB7CiAgICAgIGxpbmhhcyA9IHJlYWRMaW5lcyhlbnRyYWRhLCBuID0gNTAwTCwgd2FybiA9IEZBTFNFKQogICAgICBpZiAoIWxlbmd0aChsaW5oYXMpKSBicmVhawogICAgICBjb250YWdlbnNbIlZhcmlhbnRlcyJdID0gY29udGFnZW5zWyJWYXJpYW50ZXMiXSArIGxlbmd0aChsaW5oYXMpCiAgICAgIHJlZ2lzdHJvcyA9IHN0cnNwbGl0KGxpbmhhcywgIlx0IiwgZml4ZWQgPSBUUlVFKQogICAgICBzYWlkYV9sb3RlID0gY2hhcmFjdGVyKGxlbmd0aChyZWdpc3Ryb3MpKQogICAgICBjaHJfbG90ZSA9IGludGVnZXIobGVuZ3RoKHJlZ2lzdHJvcykpCiAgICAgIGRvc2VfbG90ZSA9IHZlY3RvcigibGlzdCIsIGxlbmd0aChyZWdpc3Ryb3MpKQoKICAgICAgZm9yIChpIGluIHNlcV9hbG9uZyhyZWdpc3Ryb3MpKSB7CiAgICAgICAgcmVnaXN0cm8gPSByZWdpc3Ryb3NbW2ldXQogICAgICAgIGlmIChsZW5ndGgocmVnaXN0cm8pICE9IGxlbmd0aChjYWJlY2FsaG8pKSBzdG9wKCJSZWdpc3RybyBWQ0YgaW5jb21wbGV0by4iKQogICAgICAgIGlmICghKHJlZ2lzdHJvWzRMXSAlaW4lIGJhc2VzICYmIHJlZ2lzdHJvWzVMXSAlaW4lIGJhc2VzICYmCiAgICAgICAgICAgICAgcmVnaXN0cm9bNExdICE9IHJlZ2lzdHJvWzVMXSkpIG5leHQKICAgICAgICBjb250YWdlbnNbIlNOUHNfYmlhbGVsaWNvcyJdID0gY29udGFnZW5zWyJTTlBzX2JpYWxlbGljb3MiXSArIDFMCiAgICAgICAgZm9ybWF0b3MgPSBzdHJzcGxpdChyZWdpc3Ryb1s5TF0sICI6IiwgZml4ZWQgPSBUUlVFKVtbMUxdXQogICAgICAgIHBvc19ndCA9IG1hdGNoKCJHVCIsIGZvcm1hdG9zKQogICAgICAgIGlmIChpcy5uYShwb3NfZ3QpKSBuZXh0CgogICAgICAgIGNoYW1hZGFzID0gcmVnaXN0cm9bY29sX2Ftb3N0cmFzXQogICAgICAgIGd0ID0gaWYgKHBvc19ndCA9PSAxTCkgewogICAgICAgICAgc3ViKCI6LiokIiwgIiIsIGNoYW1hZGFzKQogICAgICAgIH0gZWxzZSB7CiAgICAgICAgICB2YXBwbHkoc3Ryc3BsaXQoY2hhbWFkYXMsICI6IiwgZml4ZWQgPSBUUlVFKSwgZnVuY3Rpb24oeCkgewogICAgICAgICAgICB4W3Bvc19ndF0KICAgICAgICAgIH0sIGNoYXJhY3RlcigxTCkpCiAgICAgICAgfQogICAgICAgIGRvc2UgPSBkb3NhZ2Vuc1ttYXRjaChjaGFydHIoInwiLCAiLyIsIGd0KSwgY29kaWdvcyldCiAgICAgICAgaWYgKGFueU5BKGRvc2UpKSBuZXh0CiAgICAgICAgZnJlcV9hbHQgPSBzdW0oZG9zZSkgLyAoMiAqIG51bV9hbW9zdHJhcykKICAgICAgICBpZiAobWluKGZyZXFfYWx0LCAxIC0gZnJlcV9hbHQpIDwgMC4wNSkgbmV4dAoKICAgICAgICBjaHIgPSBtYXRjaChyZWdpc3Ryb1sxTF0sIGNyb21vc3NvbW9zKQogICAgICAgIGlmIChpcy5uYShjaHIpKSBzdG9wKCJDcm9tb3Nzb21vIGluZXNwZXJhZG86ICIsIHJlZ2lzdHJvWzFMXSkKICAgICAgICBjaHJfbG90ZVtpXSA9IGNocgogICAgICAgIGRvc2VfbG90ZVtbaV1dID0gYXMucmF3KGRvc2UpCiAgICAgICAgc2FpZGFfbG90ZVtpXSA9IHBhc3RlKHJlZ2lzdHJvW2Moc2VxX2xlbig5TCksIGNvbF9hbW9zdHJhcyldLCBjb2xsYXBzZSA9ICJcdCIpCiAgICAgIH0KICAgICAgZm9yIChncnVwbyBpbiBzcGxpdCh3aGljaChjaHJfbG90ZSA+IDBMKSwgY2hyX2xvdGVbY2hyX2xvdGUgPiAwTF0pKSB7CiAgICAgICAgY2hyID0gY2hyX2xvdGVbZ3J1cG9bMUxdXQogICAgICAgIGNhdChzYWlkYV9sb3RlW2dydXBvXSwgZmlsZSA9IGFycXVpdm9zW2Nocl0sIHNlcCA9ICJcbiIsIGFwcGVuZCA9IFRSVUUpCiAgICAgICAgY29uID0gZmlsZShiaW5hcmlvc1tjaHJdLCAiYWIiKQogICAgICAgIHRyeUNhdGNoKHdyaXRlQmluKGRvLmNhbGwoYywgZG9zZV9sb3RlW2dydXBvXSksIGNvbiksIGZpbmFsbHkgPSBjbG9zZShjb24pKQogICAgICAgIGNvbnRhZ2VtX2NocltjaHJdID0gY29udGFnZW1fY2hyW2Nocl0gKyBsZW5ndGgoZ3J1cG8pCiAgICAgIH0KICAgIH0KICAgIGNvbnRhZ2Vuc1siUUMiXSA9IHN1bShjb250YWdlbV9jaHIpCiAgICBwcmludChjb250YWdlbnMpCiAgICBpZiAoIWNvbnRhZ2Vuc1siUUMiXSkgc3RvcCgiTmVuaHVtIFNOUCBwYXNzb3Ugbm8gUUMuIikKCiAgICAjIDUuIFJlZHV6YSByZWR1bmTDom5jaWEgcG9yIExEIGRlbnRybyBkZSBjYWRhIGNyb21vc3NvbW8uCiAgICAjIEphbmVsYSBkZSA1MCBTTlBzLCBhdmFuw6dvIGRlIDUgU05QcyBlIGxpbWlhciBywrIgZGUgMCw1MC4KICAgICMgRW0gdW0gcGFyIGFjaW1hIGRvIGxpbWlhciwgcHJpb3JpemUgbyBtYWlvciBuw7ptZXJvIGRlIGFsZWxvcyBtZW5vcmVzLgogICAgIyBFbSBlbXBhdGUsIGZpY2EgbyBTTlAgcXVlIGFwYXJlY2UgcHJpbWVpcm8gbm8gVkNGLgogICAgIyBDYWRhIHByb2Nlc3NvIHJlY2ViZSB1bSBjcm9tb3Nzb21vIGUgZXhlY3V0YSBvcyBtZXNtb3MgbG9vcHMuCiAgICAjIFBTT0NLIGZ1bmNpb25hIGVtIFdpbmRvd3MgZSBMaW51eCBjb20gbyBwYWNvdGUgcGFyYWxsZWwgZG8gcHLDs3ByaW8gUi4KICAgIHBvZGFyX2Nyb21vc3NvbW8gPSBmdW5jdGlvbih0YXJlZmEpIHsKICAgICAgbiA9IHRhcmVmYSRuCiAgICAgIGlmICghbikgcmV0dXJuKGxvZ2ljYWwoKSkKICAgICAgbnVtX2Ftb3N0cmFzID0gdGFyZWZhJG51bV9hbW9zdHJhcwogICAgICBicnV0byA9IHJlYWRCaW4odGFyZWZhJGFycXVpdm8sICJyYXciLCBuID0gbnVtX2Ftb3N0cmFzICogbikKICAgICAgc3RvcGlmbm90KGxlbmd0aChicnV0bykgPT0gbnVtX2Ftb3N0cmFzICogbikKICAgICAgZG9zZSA9IG1hdHJpeChhcy5pbnRlZ2VyKGJydXRvKSwgbnJvdyA9IG51bV9hbW9zdHJhcykKICAgICAgcm0oYnJ1dG8pCiAgICAgIHRvdGFpcyA9IGNvbFN1bXMoZG9zZSkKICAgICAgbWFjID0gcG1pbih0b3RhaXMsIDIgKiBudW1fYW1vc3RyYXMgLSB0b3RhaXMpCiAgICAgIGF0aXZvcyA9IHJlcChUUlVFLCBuKQoKICAgICAgZm9yIChpbmljaW8gaW4gc2VxLmludCgxTCwgbiwgYnkgPSA1TCkpIHsKICAgICAgICBmaW0gPSBtaW4obiwgaW5pY2lvICsgNDlMKQogICAgICAgIGphbmVsYSA9IHNlcS5pbnQoaW5pY2lvLCBmaW0pCiAgICAgICAgYWx2b3MgPSBqYW5lbGFbYXRpdm9zW2phbmVsYV1dCiAgICAgICAgaWYgKGxlbmd0aChhbHZvcykpIHsKICAgICAgICAgIHggPSBkb3NlWywgYWx2b3MsIGRyb3AgPSBGQUxTRV0KICAgICAgICAgIHggPSBzd2VlcCh4LCAyTCwgY29sTWVhbnMoeCksICItIikKICAgICAgICAgIG5vcm1hID0gc3FydChjb2xTdW1zKHheMikpCiAgICAgICAgICBhdGl2b3NbYWx2b3Nbbm9ybWEgPT0gMF1dID0gRkFMU0UKICAgICAgICAgIGFsdm9zID0gYWx2b3Nbbm9ybWEgPiAwXQogICAgICAgICAgaWYgKGxlbmd0aChhbHZvcykgPiAxTCkgewogICAgICAgICAgICB4ID0gc3dlZXAoeFssIG5vcm1hID4gMCwgZHJvcCA9IEZBTFNFXSwgMkwsIG5vcm1hW25vcm1hID4gMF0sICIvIikKICAgICAgICAgICAgcjIgPSBjcm9zc3Byb2QoeCleMgogICAgICAgICAgICByZXBlYXQgewogICAgICAgICAgICAgIGFsdGVyb3UgPSBGQUxTRQogICAgICAgICAgICAgIGZvciAoaSBpbiBzZXFfbGVuKGxlbmd0aChhbHZvcykgLSAxTCkpIHsKICAgICAgICAgICAgICAgIGlmICghYXRpdm9zW2Fsdm9zW2ldXSkgbmV4dAogICAgICAgICAgICAgICAgZGlyZWl0YSA9IHNlcS5pbnQoaSArIDFMLCBsZW5ndGgoYWx2b3MpKQogICAgICAgICAgICAgICAgY29uZmxpdG8gPSBkaXJlaXRhW2F0aXZvc1thbHZvc1tkaXJlaXRhXV0gJgogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICByMltpLCBkaXJlaXRhXSA+IDAuNSAqICgxICsgMWUtMTIpXQogICAgICAgICAgICAgICAgaWYgKCFsZW5ndGgoY29uZmxpdG8pKSBuZXh0CiAgICAgICAgICAgICAgICBqID0gY29uZmxpdG9bMUxdCiAgICAgICAgICAgICAgICByZW1vdmVyID0gaWYgKG1hY1thbHZvc1tpXV0gPCBtYWNbYWx2b3Nbal1dKSBpIGVsc2UgagogICAgICAgICAgICAgICAgYXRpdm9zW2Fsdm9zW3JlbW92ZXJdXSA9IEZBTFNFCiAgICAgICAgICAgICAgICBhbHRlcm91ID0gVFJVRQogICAgICAgICAgICAgIH0KICAgICAgICAgICAgICBpZiAoIWFsdGVyb3UpIGJyZWFrCiAgICAgICAgICAgIH0KICAgICAgICAgIH0KICAgICAgICB9CiAgICAgICAgaWYgKGZpbSA9PSBuKSBicmVhawogICAgICB9CiAgICAgIGF0aXZvcwogICAgfQogICAgIyBFdml0ZSBlbnZpYXIgYW9zIHByb2Nlc3NvcyBvcyBvYmpldG9zIHVzYWRvcyBuYSBsZWl0dXJhIGRvIFZDRi4KICAgIGVudmlyb25tZW50KHBvZGFyX2Nyb21vc3NvbW8pID0gYmFzZWVudigpCiAgICB0YXJlZmFzID0gdmVjdG9yKCJsaXN0IiwgbGVuZ3RoKGNyb21vc3NvbW9zKSkKICAgIGZvciAoY2hyIGluIHNlcV9hbG9uZyhjcm9tb3Nzb21vcykpIHsKICAgICAgdGFyZWZhc1tbY2hyXV0gPSBsaXN0KG4gPSBjb250YWdlbV9jaHJbY2hyXSwgYXJxdWl2byA9IGJpbmFyaW9zW2Nocl0sCiAgICAgICAgICAgICAgICAgICAgICAgICAgICBudW1fYW1vc3RyYXMgPSBudW1fYW1vc3RyYXMpCiAgICB9CiAgICBzdG9waWZub3QobGVuZ3RoKG5fbnVjbGVvcykgPT0gMUwsIGlzLmZpbml0ZShuX251Y2xlb3MpLAogICAgICAgICAgICAgIG5fbnVjbGVvcyA+PSAxLCBuX251Y2xlb3MgPT0gZmxvb3Iobl9udWNsZW9zKSkKICAgIHByb2Nlc3NvcyA9IG1pbihuX251Y2xlb3MsIHN1bShjb250YWdlbV9jaHIgPiAwTCkpCiAgICBtZXNzYWdlKCJQb2RhIHBvciBMRCBjb20gIiwgcHJvY2Vzc29zLCAiIHByb2Nlc3NvKHMpLiIpCiAgICBpZiAocHJvY2Vzc29zID09IDFMKSB7CiAgICAgIG1hbnRlciA9IGxhcHBseSh0YXJlZmFzLCBwb2Rhcl9jcm9tb3Nzb21vKQogICAgfSBlbHNlIHsKICAgICAgY2x1c3RlciA9IHBhcmFsbGVsOjptYWtlUFNPQ0tjbHVzdGVyKHByb2Nlc3NvcykKICAgICAgbWFudGVyID0gdHJ5Q2F0Y2goCiAgICAgICAgcGFyYWxsZWw6OnBhckxhcHBseUxCKGNsdXN0ZXIsIHRhcmVmYXMsIHBvZGFyX2Nyb21vc3NvbW8pLAogICAgICAgIGZpbmFsbHkgPSBwYXJhbGxlbDo6c3RvcENsdXN0ZXIoY2x1c3RlcikKICAgICAgKQogICAgfQogICAgYXBvc19sZCA9IHZhcHBseShtYW50ZXIsIHN1bSwgaW50ZWdlcigxTCkpCiAgICBwcmludChkYXRhLmZyYW1lKENyb21vc3NvbW8gPSBjcm9tb3Nzb21vcywgQXBvc19RQyA9IGNvbnRhZ2VtX2NociwKICAgICAgICAgICAgICAgICAgICAgQXBvc19MRCA9IGFwb3NfbGQpLCByb3cubmFtZXMgPSBGQUxTRSkKICAgIG1lc3NhZ2UoIlNOUHMgYXDDs3MgTEQ6ICIsIHN1bShhcG9zX2xkKSkKICAgIGlmICghc3VtKGFwb3NfbGQpKSBzdG9wKCJOZW5odW0gU05QIHBhc3NvdSBuYSBwb2RhIHBvciBMRC4iKQoKICAgICMgNi4gTW9udGUgYSBtYXRyaXogZGUgbGluaGFnZW5zIGNvbSBvcyBTTlBzIHJldGlkb3MgcGVsYSBwb2RhLgogICAgIyBDYWRhIGxpbmhhIMOpIHVtYSBsaW5oYWdlbS4gQXMgY29sdW5hcyBndWFyZGFtIGEgZG9zYWdlbSBkbyBhbGVsbyBBTFQuCiAgICAjIEFwcm92ZWl0ZSBhcyBkb3NhZ2VucyBqw6EgbGlkYXMgZG8gVkNGIG5hIGV0YXBhIGRlIGNvbnRyb2xlIGRlIHF1YWxpZGFkZS4KICAgIG5fc25wcyA9IHN1bShhcG9zX2xkKQogICAgbWF0cml6ID0gbWF0cml4KE5BX2ludGVnZXJfLCBucm93ID0gbnVtX2Ftb3N0cmFzLCBuY29sID0gbl9zbnBzKQogICAgbWFyY2Fkb3JlcyA9IGNoYXJhY3RlcihuX3NucHMpCiAgICBkZXNsb2NhbWVudG8gPSAwTAoKICAgICMgR3JhdmUgbyBWQ0YgY29tcGFjdGFkbyBlIHJlw7puYSBvcyBJRHMgbmEgbWVzbWEgb3JkZW0gZGFzIGRvc2FnZW5zLgogICAgcHJvdmlzID0gdGVtcGZpbGUoIi5nMmZfIiwgdG1wZGlyID0gZGlybmFtZShkZXN0aW5vKSwgZmlsZWV4dCA9ICIudmNmLmd6IikKICAgIHNhaWRhID0gZ3pmaWxlKHByb3ZpcywgInd0IikKICAgIHRyeUNhdGNoKHsKICAgICAgd3JpdGVMaW5lcyhjKG1ldGFkYWRvcywgcGFzdGUoYyhjYWJlY2FsaG9bc2VxX2xlbig5TCldLCBpZHMpLCBjb2xsYXBzZSA9ICJcdCIpKSwgc2FpZGEpCiAgICAgIGZvciAoaSBpbiB3aGljaChhcG9zX2xkID4gMEwpKSB7CiAgICAgICAgYnJ1dG8gPSByZWFkQmluKGJpbmFyaW9zW2ldLCAicmF3IiwgbiA9IG51bV9hbW9zdHJhcyAqIGNvbnRhZ2VtX2NocltpXSkKICAgICAgICBzdG9waWZub3QobGVuZ3RoKGJydXRvKSA9PSBudW1fYW1vc3RyYXMgKiBjb250YWdlbV9jaHJbaV0pCiAgICAgICAgZG9zZSA9IG1hdHJpeChhcy5pbnRlZ2VyKGJydXRvKSwgbnJvdyA9IG51bV9hbW9zdHJhcykKICAgICAgICBjb2x1bmFzX2NociA9IGRlc2xvY2FtZW50byArIHNlcV9sZW4oYXBvc19sZFtpXSkKICAgICAgICBtYXRyaXpbLCBjb2x1bmFzX2Nocl0gPSBkb3NlWywgbWFudGVyW1tpXV0sIGRyb3AgPSBGQUxTRV0KICAgICAgICBybShicnV0bywgZG9zZSkKCiAgICAgICAgdmNzID0gZmlsZShhcnF1aXZvc1tpXSwgInJ0IikKICAgICAgICB0cnlDYXRjaCh7CiAgICAgICAgICBpbmljaW8gPSAwTAogICAgICAgICAgcmVwZWF0IHsKICAgICAgICAgICAgbG90ZSA9IHJlYWRMaW5lcyh2Y3MsIG4gPSAxMDAwTCwgd2FybiA9IEZBTFNFKQogICAgICAgICAgICBpZiAoIWxlbmd0aChsb3RlKSkgYnJlYWsKICAgICAgICAgICAgc2VsZWNpb25hciA9IG1hbnRlcltbaV1dW2luaWNpbyArIHNlcV9hbG9uZyhsb3RlKV0KICAgICAgICAgICAgcmV0aWRvcyA9IGxvdGVbc2VsZWNpb25hcl0KICAgICAgICAgICAgd3JpdGVMaW5lcyhyZXRpZG9zLCBzYWlkYSkKICAgICAgICAgICAgaWYgKGxlbmd0aChyZXRpZG9zKSkgewogICAgICAgICAgICAgICMgTyBJRCBkbyBTTlAgw6kgbyB0ZXJjZWlybyBjYW1wbyBkZSBjYWRhIHJlZ2lzdHJvIFZDRi4KICAgICAgICAgICAgICBpbmRpY2VzID0gZGVzbG9jYW1lbnRvICsgc2VxX2Fsb25nKHJldGlkb3MpCiAgICAgICAgICAgICAgbWFyY2Fkb3Jlc1tpbmRpY2VzXSA9IHN1YigiXlteXHRdKlx0W15cdF0qXHQoW15cdF0qKS4qIiwgIlxcMSIsIHJldGlkb3MpCiAgICAgICAgICAgICAgZGVzbG9jYW1lbnRvID0gZGVzbG9jYW1lbnRvICsgbGVuZ3RoKHJldGlkb3MpCiAgICAgICAgICAgIH0KICAgICAgICAgICAgaW5pY2lvID0gaW5pY2lvICsgbGVuZ3RoKGxvdGUpCiAgICAgICAgICB9CiAgICAgICAgICBzdG9waWZub3QoaW5pY2lvID09IGNvbnRhZ2VtX2NocltpXSkKICAgICAgICB9LCBmaW5hbGx5ID0gY2xvc2UodmNzKSkKICAgICAgfQogICAgfSwgZmluYWxseSA9IGNsb3NlKHNhaWRhKSkKICAgIHN0b3BpZm5vdChkZXNsb2NhbWVudG8gPT0gbl9zbnBzLCBhbGwobnpjaGFyKG1hcmNhZG9yZXMpICYgbWFyY2Fkb3JlcyAhPSAiLiIpLAogICAgICAgICAgICAgICFhbnlEdXBsaWNhdGVkKG1hcmNhZG9yZXMpKQogICAgZGltbmFtZXMobWF0cml6KSA9IGxpc3QoaWRzLCBtYXJjYWRvcmVzKQogICAgaWYgKCFmaWxlLnJlbmFtZShwcm92aXMsIGRlc3Rpbm8pKSB7CiAgICAgIHN0b3AoIk7Do28gZm9pIHBvc3PDrXZlbCBncmF2YXIgbyBWQ0YgZmluYWwgZW06ICIsIGRlc3Rpbm8pCiAgICB9CiAgICBtZXNzYWdlKCJWQ0Ygc2Fsdm8gZW06ICIsIGRlc3Rpbm8pCgogICAgaW52aXNpYmxlKGxpc3QoaGlicmlkb3MgPSBlbGVnaXZlaXMsIHBlbmRlbnRlcyA9IHBlbmRlbnRlcywgYWxpYXNlcyA9IHJldmlzYW8sCiAgICAgICAgICAgICAgICAgICBwYXJlbnRhaXMgPSBpZHMsIGNvbnRhZ2VucyA9IGNvbnRhZ2Vucywgc25wc19hcG9zX2xkID0gc3VtKGFwb3NfbGQpLAogICAgICAgICAgICAgICAgICAgYXJxdWl2byA9IGRlc3Rpbm8sIE1fbGluaGFnZW5zID0gbWF0cml6KSkKICB9LCBmaW5hbGx5ID0gewogICAgaWYgKCFpcy5udWxsKGVudHJhZGEpKSBjbG9zZShlbnRyYWRhKQogICAgaWYgKCFpcy5udWxsKHByb3ZpcykpIHVubGluayhwcm92aXMpCiAgICBpZiAoIWlzLm51bGwocGFzdGFfdGVtcCkpIHVubGluayhwYXN0YV90ZW1wLCByZWN1cnNpdmUgPSBUUlVFKQogIH0pCn0pCgojIDcuIENhbGN1bGUgYSBoZXRlcm96aWdvc2lkYWRlIG5vcyBTTlBzIHJldGlkb3MgcGVsYSBwb2RhIHBvciBMRC4KIyBBIGRvc2FnZW0gMSBpbmRpY2EgdW1hIGPDs3BpYSBkZSBjYWRhIGFsZWxvLCBvdSBzZWphLCB1bSBoZXRlcm96aWdvdG8uCk1fbGluaGFnZW5zID0gcHJlcGFyYWNhbyRNX2xpbmhhZ2VucwpwcmVwYXJhY2FvJE1fbGluaGFnZW5zID0gTlVMTApoZXRlcm96aWdvdG9zID0gcm93U3VtcyhNX2xpbmhhZ2VucyA9PSAxTCkKbl9zbnBzID0gbmNvbChNX2xpbmhhZ2VucykKaGV0ZXJvemlnb3NpZGFkZSA9IGRhdGEuZnJhbWUoCiAgTGluaGFnZW0gPSByb3duYW1lcyhNX2xpbmhhZ2VucyksCiAgU05Qc192YWxpZG9zID0gbl9zbnBzLAogIFNOUHNfaGV0ZXJvemlnb3RvcyA9IGhldGVyb3ppZ290b3MsCiAgSGV0ZXJvemlnb3NpZGFkZV9wY3QgPSAxMDAgKiBoZXRlcm96aWdvdG9zIC8gbl9zbnBzLAogIHJvdy5uYW1lcyA9IE5VTEwKKQpoZXRlcm96aWdvc2lkYWRlID0gaGV0ZXJvemlnb3NpZGFkZVsKICBvcmRlcihoZXRlcm96aWdvc2lkYWRlJEhldGVyb3ppZ29zaWRhZGVfcGN0LCBkZWNyZWFzaW5nID0gVFJVRSksICwKICBkcm9wID0gRkFMU0UKXQpsaW5oYWdlbnNfcmV2aXNhciA9IGhldGVyb3ppZ29zaWRhZGUkTGluaGFnZW1baGV0ZXJvemlnb3NpZGFkZSRTTlBzX2hldGVyb3ppZ290b3MgPiAwTF0KcHJpbnQoaGVhZChoZXRlcm96aWdvc2lkYWRlLCAyMEwpLCByb3cubmFtZXMgPSBGQUxTRSkKCiMgOC4gUmV0ZW5oYSBuYXMgbWF0cml6ZXMgb3MgcGFyZW50YWlzIHNlbSBoZXRlcm96aWdvdG9zIGUgc2V1cyBjcnV6YW1lbnRvcy4KIyBVbSBwYXJlbnRhbCBoZXRlcm96aWdvdG8gcG9kZSB0cmFuc21pdGlyIHF1YWxxdWVyIHVtIGRvcyBzZXVzIGRvaXMgYWxlbG9zLgojIE8gYXJxdWl2byBzbnAuY2xlYW4gcmVnaXN0cmEgb3MgU05QcyBhcMOzcyBhIHBvZGEgcG9yIExELCBhbnRlcyBkZXN0YSBldGFwYS4KY3J1emFtZW50b3MgPSBwcmVwYXJhY2FvJGhpYnJpZG9zCmV4Y2x1aXIgPSBjcnV6YW1lbnRvcyRESDEgJWluJSBsaW5oYWdlbnNfcmV2aXNhciB8CiAgY3J1emFtZW50b3MkREgyICVpbiUgbGluaGFnZW5zX3JldmlzYXIKaGlicmlkb3NfcmV2aXNhciA9IGNydXphbWVudG9zW2V4Y2x1aXIsIGMoIlBlZGlncmVlIiwgIkRIMSIsICJESDIiKSwgZHJvcCA9IEZBTFNFXQpwcmludChoaWJyaWRvc19yZXZpc2FyLCByb3cubmFtZXMgPSBGQUxTRSkKbWVzc2FnZSgiTGluaGFnZW5zIGV4Y2x1w61kYXM6ICIsIGxlbmd0aChsaW5oYWdlbnNfcmV2aXNhcikpCm1lc3NhZ2UoIkjDrWJyaWRvcyBleGNsdcOtZG9zOiAiLCBucm93KGhpYnJpZG9zX3JldmlzYXIpKQoKY3J1emFtZW50b3MgPSBjcnV6YW1lbnRvc1shZXhjbHVpciwgLCBkcm9wID0gRkFMU0VdCk1fbGluaGFnZW5zID0gTV9saW5oYWdlbnNbCiAgIXJvd25hbWVzKE1fbGluaGFnZW5zKSAlaW4lIGxpbmhhZ2Vuc19yZXZpc2FyLCAsIGRyb3AgPSBGQUxTRQpdCmlmICghbnJvdyhjcnV6YW1lbnRvcykpIHN0b3AoIk5lbmh1bSBow61icmlkbyB0ZW0gZG9pcyBwYXJlbnRhaXMgaG9tb3ppZ290b3MuIikKCiMgOS4gUmVjb25zdHJ1YSBhIGRvc2FnZW0gZG9zIGjDrWJyaWRvcyBhIHBhcnRpciBkb3MgZG9pcyBwYXJlbnRhaXMuCiMgQ2FkYSBwYXJlbnRhbCBob21vemlnb3RvIHRyYW5zbWl0ZSB1bWEgY8OzcGlhIGRvIHNldSBhbGVsby4KIyBQb3IgZXhlbXBsbywgdW0gY3J1emFtZW50byAwLzAgw5cgMS8xIHByb2R1eiBkb3NhZ2VtIDEgbm8gaMOtYnJpZG8uCnBhaV8xID0gbWF0Y2goY3J1emFtZW50b3MkREgxLCByb3duYW1lcyhNX2xpbmhhZ2VucykpCnBhaV8yID0gbWF0Y2goY3J1emFtZW50b3MkREgyLCByb3duYW1lcyhNX2xpbmhhZ2VucykpCnN0b3BpZm5vdCghYW55TkEocGFpXzEpLCAhYW55TkEocGFpXzIpKQoKTV9oaWJyaWRvcyA9IG1hdHJpeCgKICBOQV9pbnRlZ2VyXywgbnJvdyA9IG5yb3coY3J1emFtZW50b3MpLCBuY29sID0gbl9zbnBzLAogIGRpbW5hbWVzID0gbGlzdChjcnV6YW1lbnRvcyRQZWRpZ3JlZSwgY29sbmFtZXMoTV9saW5oYWdlbnMpKQopCmZvciAoaiBpbiBzZXFfbGVuKG5fc25wcykpIHsKICBNX2hpYnJpZG9zWywgal0gPSAoTV9saW5oYWdlbnNbcGFpXzEsIGpdICsgTV9saW5oYWdlbnNbcGFpXzIsIGpdKSAlLyUgMkwKfQoKIyBVc2UgUGVkaWdyZWUgcGFyYSByZWxhY2lvbmFyIG9zIGjDrWJyaWRvcyBkYSBtYXRyaXogw6BzIG3DqWRpYXMgYWp1c3RhZGFzLgpwcmludChkYXRhLmZyYW1lKAogIE1hdHJpeiA9IGMoIkxpbmhhZ2VucyIsICJIw61icmlkb3MiKSwKICBHZW5vdGlwb3MgPSBjKG5yb3coTV9saW5oYWdlbnMpLCBucm93KE1faGlicmlkb3MpKSwKICBTTlBzID0gYyhuY29sKE1fbGluaGFnZW5zKSwgbmNvbChNX2hpYnJpZG9zKSkKKSwgcm93Lm5hbWVzID0gRkFMU0UpCgojIFNhbHZlIGFzIG1hdHJpemVzIHBhcmEgYSBwcsOzeGltYSBldGFwYSBkYSBhbsOhbGlzZS4Kc2F2ZVJEUyhNX2xpbmhhZ2VucywgZmlsZS5wYXRoKCJkYXRhIiwgIm1hcmNhZG9yZXNfbGluaGFnZW5zLnJkcyIpKQpzYXZlUkRTKE1faGlicmlkb3MsIGZpbGUucGF0aCgiZGF0YSIsICJtYXJjYWRvcmVzX2hpYnJpZG9zLnJkcyIpKQo=" download="preparacao_genotipica.R"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/></svg>Baixar código em R <span>.R</span></a>
+</div>
+
+```{=html}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var banner = document.querySelector(".quarto-title-banner");
+    var button = document.getElementById("quarto-code-tools-source");
+    if (!banner || !button) return;
+
+    button.classList.add("banner-code");
+    document.body.appendChild(button);
+
+    function placeButton() {
+        var bottom = banner.getBoundingClientRect().bottom + window.scrollY;
+        button.style.top = (bottom - button.offsetHeight - 6) + "px";
+    }
+
+    placeButton();
+    window.addEventListener("resize", placeButton);
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const main = document.querySelector("main.content");
+  if (!main) return;
+  const dialog = document.createElement("dialog");
+  dialog.className = "result-dialog";
+  dialog.setAttribute("aria-labelledby", "expanded-result-title");
+  dialog.innerHTML = '<header><strong id="expanded-result-title"></strong>' +
+    '<button class="btn btn-outline-secondary btn-sm" type="button">Fechar</button></header>' +
+    '<div class="expanded-content"></div>';
+  document.body.appendChild(dialog);
+  const content = dialog.querySelector(".expanded-content");
+  const closeButton = dialog.querySelector("button");
+  let active = null;
+
+  function resizeWidgets() {
+    requestAnimationFrame(function () {
+      window.dispatchEvent(new Event("resize"));
+      const jq = window.jQuery;
+      if (jq && jq.fn.dataTable) {
+        jq.fn.dataTable.tables({visible: true, api: true}).columns.adjust();
+      }
+    });
+  }
+
+  closeButton.addEventListener("click", function () { dialog.close(); });
+  dialog.addEventListener("close", function () {
+    if (!active) return;
+    active.anchor.after(active.node);
+    active.button.focus();
+    active = null;
+    resizeWidgets();
+  });
+
+  const widgets = Array.from(main.querySelectorAll(".datatables.html-widget, figure"))
+    .filter(function (node) { return node.matches("figure") || !node.closest("figure"); });
+  main.querySelectorAll("table").forEach(function (table) {
+    if (!table.closest(".html-widget, figure, .dataTables_wrapper, .dt-container")) {
+      widgets.push(table);
+    }
+  });
+
+  widgets.forEach(function (node) {
+    const isFigure = node.matches("figure");
+    const label = isFigure ? "Figura" : "Tabela";
+    const caption = node.querySelector("figcaption, caption");
+    const title = caption ? caption.textContent.trim() : label;
+    const anchor = document.createElement("div");
+    anchor.className = "expand-controls";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "expand-icon";
+    button.title = "Ampliar " + label.toLowerCase();
+    button.setAttribute("aria-label", button.title);
+    button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/></svg>';
+    button.setAttribute("aria-haspopup", "dialog");
+    anchor.appendChild(button);
+    node.before(anchor);
+    button.addEventListener("click", function () {
+      if (dialog.open) return;
+      active = {node: node, anchor: anchor, button: button};
+      dialog.querySelector("strong").textContent = title;
+      content.appendChild(node);
+      dialog.showModal();
+      closeButton.focus();
+      resizeWidgets();
+    });
+  });
+});
+</script>
+```
